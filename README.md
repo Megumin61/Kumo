@@ -12,6 +12,16 @@ Kumo 是一款以本地文件夹为资料库的网页剪藏工具。浏览器负
 - **探索知识花园**：通过领域、主题和帖子查看自己的内容，使用不同植物节点与两套品牌外观。
 - **让 AI 用上收藏**：在支持本地执行的 ChatGPT Work / Codex 客户端中，查找依据、读取原文、整理分类并编译主题知识。
 
+## 让花园动起来
+
+**11 种画风，自由切换。** 水彩、套色、彩铅、蜡笔、印章、露营贴纸……同一份知识，也可以有不同的样子。
+
+![Kumo 十一种画风真实切换演示](docs/media/kumo-style-switching.gif)
+
+[观看约 35 秒完整短片](docs/media/kumo-product-demo.mp4) · [风格切换高清版](docs/media/kumo-style-switching.mp4) · [下载循环动图](docs/media/kumo-style-switching.gif)
+
+完整短片同时展示浏览器剪藏面板、收藏列表、合集和花园交互。风格与交互为真实界面采样，花园使用合成演示数据，停留时间经过剪辑。
+
 ## 看看 Kumo
 
 下面是当前产品界面的实机截图，使用合成演示数据：39 篇收藏、6 个领域、18 个主题。截图不包含真实用户收藏；它们展示界面，并不表示这些材料已由 AI 实际编译。
@@ -26,7 +36,9 @@ Kumo 是一款以本地文件夹为资料库的网页剪藏工具。浏览器负
 
 从领域展开到主题，再进入具体收藏。当前分支更清晰，右侧同时呈现概括、数量和相关内容。
 
-![Kumo 知识花园：展开界面设计领域并查看三个相关主题](docs/screenshots/02-knowledge-garden.jpg)
+![Kumo 分层探索与节点图鉴交互演示](docs/media/kumo-explore.gif)
+
+[查看静态截图](docs/screenshots/02-knowledge-garden.jpg) · [交互高清短片](docs/media/kumo-explore.mp4)
 
 ### 节点图鉴 · 给知识选择自己的样子
 
