@@ -1,0 +1,4 @@
+/* Exact pixels from the approved 1410px screenshot; presentation-only clipping. */
+.logo-crop{position:relative;display:inline-block;width:32px;height:32px;overflow:hidden;flex:none}
+.brand .logo-crop img{position:absolute;width:940px;height:auto;max-width:none;left:-47px;top:-47px;margin:0}
+body,button,input,textarea,select,#eyebrow,#preview,#status,.target-path,.card-meta,.muted{font-family:"Microsoft YaHei","Microsoft YaHei UI","Segoe UI",Arial,sans-serif}

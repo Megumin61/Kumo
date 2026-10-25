@@ -1,0 +1,25 @@
+@import url('v13.css');
+.workbench{height:max(660px,calc(100dvh - 225px))}
+.stage{background:radial-gradient(ellipse at 9% 16%,#dae7f354,transparent 55%),radial-gradient(ellipse at 86% 85%,#ede5c940,transparent 57%),radial-gradient(ellipse at 68% 30%,#e5e9df46,transparent 55%),#fcfcf9}
+[data-scheme=cabinet] .stage{background:radial-gradient(ellipse at 4% 85%,#f3debd45,transparent 52%),radial-gradient(ellipse at 82% 12%,#e0e8f04d,transparent 55%),radial-gradient(ellipse at 67% 82%,#e3e9d94d,transparent 55%),#fcfbf7}
+.node-art,[data-scheme=glass] .node-art{opacity:.96}
+.garden-node .count{font-size:16px;font-weight:800;fill:#344235;paint-order:stroke;stroke:#fffdf4df;stroke-width:2.6px;stroke-linejoin:round;letter-spacing:-.5px}
+.garden-node.topic .count,#field-host .garden-node.topic .count{font-size:12px;stroke-width:2px}
+.garden-node .name{font-family:system-ui,'Microsoft YaHei',sans-serif;font-weight:750;letter-spacing:.15px;fill:#3f4c3b}
+.garden-node.source:hover .node-art,.garden-node.source:focus-visible .node-art{transform:translateY(-1px) scale(1.22)}
+.garden-node.context{opacity:.27}
+.garden-edge.membership{stroke:#aab7a0;stroke-width:.8;opacity:.52}
+#field-host .garden-node.domain .name{font-size:12px}
+#converge-host .garden-node.domain .name{text-anchor:start;font-size:12px;font-weight:750}
+#converge-host .garden-node.lens .name{font-size:12px}
+#converge-host .garden-node .count{font-size:13px;stroke-width:0}
+#converge-host .garden-edge.provenance{stroke:#8fa47c;opacity:.36}
+#converge-host [data-edge*='lens:compare'] .garden-edge{stroke:#bda15d}
+#converge-host [data-edge*='lens:review'] .garden-edge{stroke:#aaa18d;stroke-dasharray:4 5}
+#converge-host .edge-group.traced .garden-edge{opacity:.86}
+#converge-host .edge-group.muted{opacity:.18}
+#converge-host .garden-node.brand .node-art{filter:drop-shadow(0 0 11px #fcfbf7);opacity:1}
+.edge-hit{fill:none;stroke:transparent;pointer-events:stroke}
+.edge-hit:focus-visible{stroke:#aa945e55;outline:none}
+.asset-pair{background:linear-gradient(145deg,#fffdf8,#f6f7f2)}
+@media(prefers-reduced-motion:reduce){.garden-node{transition:none}}

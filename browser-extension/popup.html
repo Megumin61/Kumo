@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kumo 网页剪藏</title>
+  <link rel="stylesheet" href="common.css"><link rel="stylesheet" href="popup.css"><link rel="stylesheet" href="popup-refinements.css"><link rel="stylesheet" href="logo.css">
+<link rel="stylesheet" href="forest-journal.css"></head>
+<body>
+  <main>
+    <header>
+      <div class="brand"><span class="logo-crop" data-original="false"><img src="assets/brand/primary.png" alt="Kumo 标识"></span>Kumo <span id="app-version" hidden></span></div>
+      <button id="destination-open" class="chip" type="button">保存位置</button>
+    </header>
+
+    <section id="page-card" aria-live="polite">
+      <div class="source-line"><span id="platform-mark" class="platform-mark" aria-hidden="true"></span><div id="eyebrow">正在读取当前页面…</div></div>
+      <img id="page-thumbnail" class="page-thumbnail" alt="当前内容的媒体预览" hidden>
+      <span id="page-media-kind" class="media-kind" hidden aria-label="媒体类型"></span>
+      <h1 id="title">网页剪藏</h1>
+      <p id="preview"></p>
+    </section>
+
+    <section id="save-plan" class="save-plan" aria-label="本次保存内容" hidden>
+      <strong>本次将保存</strong>
+      <span id="save-plan-text">正在计算内容清单…</span>
+    </section>
+
+
+    <section aria-label="用户标签">
+      <div class="label-row"><label class="note-label">选择标签</label></div>
+      <div class="tag-row"><div id="tag-list"></div><button id="add-tag" class="tag-add chip dashed" type="button">+ 新标签</button><form id="tag-form" class="tag-add chip dashed" hidden><input id="tag-input" maxlength="40" aria-label="新标签" placeholder="标签名称" autocomplete="off"></form></div>
+    </section>
+    <section id="video-focus" hidden>
+      <label class="target-label" for="video-intent">视频参考</label>
+      <select id="video-intent">
+        <option value="">用途 · 可选</option>
+        <option value="审美参考">审美、画面或节奏</option>
+        <option value="方法学习">做事方法或操作步骤</option>
+        <option value="观点核验">观点、事实或论据</option>
+        <option value="素材复用">以后制作时复用</option>
+      </select>
+      <p id="video-position" class="target-path" hidden></p>
+    </section>
+    <label class="note-label" for="note">笔记</label>
+    <div class="note-wrap"><textarea id="note" rows="3" placeholder="写点心得…"></textarea><span id="note-count">0</span></div>
+    <button id="settings-open" class="settings-entry" type="button"><span>保存设置</span></button>
+    <section id="save-options" hidden aria-label="保存设置">
+      <div class="settings-heading"><button id="settings-back" type="button" class="quiet">返回</button><h2>保存设置</h2></div>
+      <div class="path-card"><label class="note-label" for="save-location-mode">保存位置</label>
+      <select id="save-location-mode" aria-label="保存位置"><option value="auto">连接的本地资料库</option><option value="directory">资料文件夹</option><option value="downloads">浏览器下载目录</option></select>
+      <p id="target-path" class="target-path"></p>
+      <button id="change-folder" class="chip" type="button">选择保存文件夹</button>
+      <button id="use-connected" class="quiet" type="button" hidden>使用已连接的资料库</button>
+      <p class="muted">选择用于保存收藏的资料文件夹，无需选择软件安装目录。</p></div>
+      <h2>保存内容</h2>
+      <label class="check"><input id="include-screenshot" type="checkbox"> 保存当前视口截图</label>
+      <label class="check"><input id="download-images" type="checkbox" checked> 下载帖子中的主要图片</label>
+      <label class="check"><input id="download-video" type="checkbox"> 下载完整视频（可选，可能耗时较长）</label>
+      <label class="option-row" for="comment-count"><span>讨论快照</span>
+        <select id="comment-count">
+          <option value="0" selected>不保存评论</option>
+          <option value="5">前 5 条已加载评论</option>
+          <option value="10">前 10 条已加载评论</option>
+        </select>
+      </label>
+      <p id="shortcut-info" class="muted">Alt+Shift+K 打开 · Alt+Shift+S 一键剪藏 · Ctrl+Enter 保存。键位被占用时可在浏览器扩展快捷键设置中调整。</p>
+      <p><a href="help.html" target="_blank" rel="noopener">保存与 AI 连接说明</a></p>
+    </section>
+
+    <button id="save" class="primary" title="Ctrl+Enter / Cmd+Enter 保存" disabled>嚼一嚼</button>
+    <section id="progress-panel" class="progress-panel" hidden aria-live="polite">
+      <div class="progress-head"><span id="progress-label">准备保存</span><span id="progress-time">0 秒</span></div>
+      <progress id="progress" max="100" value="0"></progress>
+      <div id="progress-detail" class="progress-detail"></div>
+    </section>
+    <div class="save-state"><div id="status" role="status">准备保存</div><span id="status-summary">正文、媒体与原帖链接</span></div>
+    <p id="folder" class="folder">首次保存时选一个资料文件夹，之后会记住。</p>
+    <button id="open-library" type="button" class="library-entry"><span class="entry-label">我的收藏 <span id="saved-count" class="count" hidden></span></span></button>
+  </main>
+  <script src="page-state.js"></script>
+  <script src="video-focus.js"></script>
+  <script src="extractor.js"></script>
+  <script src="format.js"></script>
+  <script src="media.js"></script>
+  <script src="storage.js"></script>
+  <script src="bridge.js"></script>
+  <script src="tags.js"></script>
+  <script src="ui.js"></script>
+<script src="library-panel.js"></script><script src="destination.js"></script><script src="popup.js"></script>
+<script type="module" src="brand-sync.mjs"></script></body>
+</html>
+

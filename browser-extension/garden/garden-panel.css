@@ -1,0 +1,48 @@
+/* v16.5 · Kumo extension: side panel (narrow) and landscape tab */
+.frame-landscape{border:1px solid #e3dcc3;background:#fffdf6;color:#56653c;border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.frame-landscape:hover{background:#f6f1df}
+.frame-reader-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:45;border:0;border-radius:999px;padding:9px 18px;background:#5c6d3d;color:#fffdf4;font:inherit;font-size:13px;box-shadow:0 8px 22px rgba(60,60,30,.25);cursor:pointer}
+body:not(.is-narrow) .frame-reader-pill{display:none}
+body.is-narrow header{padding:10px 12px!important;gap:8px!important;flex-wrap:wrap}
+body.is-narrow header .brand{font-size:20px}
+body.is-narrow header .brand span{display:none}
+body.is-narrow header nav{gap:8px!important;flex-wrap:wrap;width:100%;justify-content:space-between}
+body.is-narrow .header-search,body.is-narrow header input[type=search]{width:100%!important;order:9}
+body.is-narrow .workbench{grid-template-columns:1fr!important;gap:10px!important;padding:0 8px 12px!important}
+body.is-narrow .stage{height:calc(100vh - 150px)!important;min-height:440px}
+body.is-narrow #reader{margin:0!important;max-height:none!important}
+body.is-narrow .field-legend{display:none}
+body.is-narrow .garden-surprise{left:10px;right:10px;width:auto;bottom:10px}
+body.is-narrow .toolbar,body.is-narrow .lens-bar{transform:scale(.92);transform-origin:left bottom}
+body:not(.is-narrow) .frame-landscape{display:none}
+
+/* A light collection surface inside the browser's native side panel. */
+.frame-library{color:#68715e;text-decoration:none;font-size:12px;white-space:nowrap}
+.frame-library:hover{text-decoration:underline}
+.frame-reader-close,.frame-map-hint{display:none}
+body.is-collection-panel{background:#faf9f5}
+body.is-collection-panel.is-narrow header{background:#faf9f5;box-shadow:none;border-bottom:1px solid #e8e6dd;padding:12px!important}
+body.is-collection-panel.is-narrow .header-search{max-width:none;margin:0;order:3}
+body.is-collection-panel.is-narrow header .brand{font-size:19px}
+body.is-collection-panel.is-narrow header nav{width:auto;margin-left:auto;gap:10px!important}
+body.is-collection-panel.is-narrow #open-atlas{display:none}
+body.is-collection-panel.is-narrow #totals{display:none}
+body.is-collection-panel.is-narrow header button,.frame-library{font-size:12px}
+body.is-collection-panel.is-narrow .frame-landscape{border:0;background:transparent;padding:0;color:#7d8272}
+body.is-collection-panel.is-narrow .workbench{padding:8px!important;gap:8px!important}
+body.is-collection-panel.is-narrow .toolbar{transform:none;justify-content:flex-end;padding:0 2px 7px}
+body.is-collection-panel.is-narrow .toolbar [role=tablist],body.is-collection-panel.is-narrow #field-options,body.is-collection-panel.is-narrow #garden-lenses{display:none!important}
+body.is-collection-panel.is-narrow .stage{height:calc(100dvh - 168px)!important;min-height:300px;border-radius:16px;box-shadow:none;border:1px solid #e7e3d7}
+body.is-collection-panel.is-narrow #chart{height:100%!important;min-height:0}
+body.is-collection-panel.is-narrow .plot-heading{display:none}
+body.is-collection-panel.is-narrow .frame-map-hint{display:block;text-align:center;font-size:11px;color:#8d927e;margin:7px 0 0}
+body.is-collection-panel.is-narrow[data-screen=garden] #reader{display:none}
+body.is-collection-panel.is-narrow[data-screen=garden].reader-open #reader{display:block;position:fixed;inset:auto 8px 8px;z-index:50;max-height:46dvh!important;overflow:auto;overscroll-behavior:contain;background:#fffef9;border:1px solid #e6e2d6;border-radius:18px;padding:18px 18px 22px;box-shadow:0 -6px 28px #3c422316;outline:none}
+body.is-collection-panel.is-narrow[data-screen=garden].reader-open .frame-reader-close{display:block;position:sticky;float:right;top:0;z-index:2;background:#f5f4ed;color:#717862;border:1px solid #e5e3d8;border-radius:999px;padding:5px 12px;font:inherit;font-size:12px;cursor:pointer}
+body.is-collection-panel.is-narrow #reader h2{font-size:20px}
+body.is-collection-panel.is-narrow[data-screen=appearance] .stage{height:34dvh!important;min-height:220px}
+body.is-collection-panel.is-narrow[data-screen=appearance] .preview-heading{display:none}
+body.is-collection-panel.is-narrow[data-screen=appearance] #reader{border:0;box-shadow:none;background:transparent;padding:12px 8px}
+body.is-collection-panel.is-narrow .garden-style-card{box-shadow:none}
+body.is-collection-panel.is-narrow .garden-surprise{display:none}
+@media(max-height:560px){body.is-collection-panel.is-narrow .stage{min-height:220px}}

@@ -1,0 +1,60 @@
+// Read-only XYZ scene with perspective projection. No remote renderer or AI call.
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const svg=(tag,attrs={},text)=>{const n=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+const list=(v,ordered=false)=>v?.length?`<${ordered?'ol':'ul'}>${v.map(t=>'<li>'+esc(t)+'</li>').join('')}</${ordered?'ol':'ul'}>`:'<p>证据不足，尚未沉淀成方法。</p>';
+let data,tags=[],mode='all',selected='root',nodes=[],edges=[],yaw=0,pitch=.13,scale=1,drag,rootGroup,last=0,hovered=false;
+$('motion').setAttribute('aria-pressed',String(!matchMedia('(prefers-reduced-motion: reduce)').matches));
+const resourceLink=id=>'library.html#item='+encodeURIComponent(id);
+const parent=n=>n.kind==='domain'?(n.parentDomainId?'domain:'+n.parentDomainId:'root'):(n.parentTopicId?'topic:'+n.parentTopicId:'domain:'+n.domainId);
+const nodeId=n=>n.kind+':'+n.id;
+function descendants(n){const ids=new Set([nodeId(n)]);let changed=true;while(changed){changed=false;for(const c of data.nodes)if(ids.has(parent(c))&&!ids.has(nodeId(c))){ids.add(nodeId(c));changed=true;}}return ids;}
+function sourceIds(n){if(n.kind==='root')return new Set(data.sources.map(s=>s.id));if(n.kind==='collection')return new Set(data.sources.filter(s=>n.key==='__pending'?!s.compiled:s.collections.some(t=>t.id===n.key)).map(s=>s.id));if(n.kind==='principle')return new Set(n.owner.knowledge.evidence.map(e=>e.sourceId));const ids=descendants(n.raw||n);return new Set(data.cards.filter(c=>!c.stale&&(c.domainIds.some(id=>ids.has('domain:'+id))||c.topicIds.some(id=>ids.has('topic:'+id)))).map(c=>c.id));}
+function resources(items){return items.length?items.map(s=>{const c=data.cards.find(c=>c.id===s.id);return '<div class="resource"><div><a href="'+resourceLink(s.id)+'">'+esc(KumoUI.displayTitle(s))+'</a><small>'+esc(s.platform||'网页')+' · '+(c?.stale?'待更新':c?.evidenceStatus==='index_only'?'仅建索引':s.compiled?'已编译':'待整理')+'</small><p>'+esc(c?.summary||'尚未编译')+'</p></div></div>';}).join(''):'<p>暂无资料。</p>';}
+function choose(id){selected=id;build();}
+function inspect(n){
+ const ids=sourceIds(n),items=data.sources.filter(s=>ids.has(s.id));let html='';
+ if(n.kind==='root')html='<span class="badge">知识总览</span><h2>从收藏，到可复用经验</h2><p>'+data.total+' 条收藏 · '+data.nodes.filter(n=>n.kind==='domain'&&!n.parentDomainId).length+' 个主领域</p><h3>如何探索</h3><p>点击领域逐层展开；拖动旋转，滚轮缩放。球体大小表示去重后的关联资料量，不是能力或可信度评分。</p><h3>已沉淀的方向</h3>'+data.nodes.filter(n=>n.kind==='domain'&&!n.parentDomainId).map(n=>'<button class="branch" data-jump="'+nodeId(n)+'"><strong>'+esc(n.name)+'</strong><span>'+esc(n.summary)+'</span></button>').join('')+'<h3>证据边界</h3><p>'+data.indexOnly+' 条仅建索引，不能作为方法依据。已有用户标签保持原样，地图不重分配收藏。</p>';
+ else if(n.kind==='collection')html='<span class="badge">用户标签 · 保持原样</span><h2>'+esc(n.label)+'</h2><p>'+items.length+' 条收藏</p>';
+ else if(n.kind==='principle')html='<span class="badge">AI 归纳 · 条件性判断</span><h2>'+esc(n.label)+'</h2><p>'+esc(n.text)+'</p><h3>所属知识</h3><button class="branch" data-jump="'+nodeId(n.owner)+'">'+esc(n.owner.name)+'</button><h3>适用边界</h3>'+list(n.owner.avoidWhen)+'<p>依据为该主题的证据集合，并非每篇都独立支持此判断。</p>';
+ else {const raw=n.raw,k=raw.knowledge;html='<span class="badge '+(raw.summaryNeedsReview?'stale':'')+'">'+(raw.summaryNeedsReview?'来源变化 · 待核验':n.kind==='domain'?'AI 领域':'AI 主题')+'</span><h2>'+esc(raw.name)+'</h2><p>'+esc(raw.summary)+'</p><p class="metric">'+ids.size+' 条关联资料 · '+(k?.takeaways?.length||0)+' 条可复用判断</p><h3>沉淀了什么</h3>'+list(k?.takeaways)+'<h3>怎么做</h3>'+list(k?.steps,true)+'<h3>怎么检查</h3>'+list(k?.checks)+'<h3>何时不该用</h3>'+list(raw.avoidWhen)+'<h3>分歧与待验证</h3>'+list(k?.openQuestions);
+ const children=data.nodes.filter(c=>parent(c)===n.id);if(children.length)html+='<h3>继续探索</h3>'+children.map(c=>'<button class="branch" data-jump="'+nodeId(c)+'">'+esc(c.name)+'<small>'+sourceIds({raw:c}).size+' 条资料</small></button>').join('');
+ const related=edges.filter(e=>e.relation&&(e.from===n.id||e.to===n.id));if(related.length)html+='<h3>跨主题关联</h3>'+related.map(e=>'<div class="relationship">'+esc(e.reason)+'</div>').join('');}
+ if(n.kind!=='root')html+='<details class="evidence"><summary>来源与逐篇总结 · '+items.length+'</summary>'+resources(items)+'</details>';
+ $('inspector').innerHTML=html;for(const b of $('inspector').querySelectorAll('[data-jump]'))b.onclick=()=>choose(b.dataset.jump);
+}
+function build(){if(!data)return;
+ const previousOwner=nodes.find(n=>n.id===selected)?.owner;
+ nodes=[{id:'root',kind:'root',label:'我的知识',count:data.total,x:0,y:0,z:0}];edges=[];
+ const active=data.nodes.find(n=>nodeId(n)===selected)||previousOwner,expanded=new Set(['root']);
+ if(active){let current=active;while(current){expanded.add(nodeId(current));current=data.nodes.find(n=>nodeId(n)===parent(current));}}
+ if(mode==='all'||mode==='domain')for(const n of data.nodes){if(!expanded.has(parent(n)))continue;nodes.push({id:nodeId(n),kind:n.kind,raw:n,label:n.name,parent:parent(n),count:sourceIds({raw:n}).size});}
+ if(mode==='collection')for(const t of tags.filter(t=>!t.hidden))nodes.push({id:'collection:'+t.id,key:t.id,kind:'collection',label:t.label,parent:'root',count:data.sources.filter(s=>s.collections.some(c=>c.id===t.id)).length});
+ if(mode==='pending')nodes.push({id:'collection:__pending',key:'__pending',kind:'collection',label:'待整理',parent:'root',count:data.total-data.compiled});
+ if(active&&!active.summaryNeedsReview)for(const [i,text]of (active.knowledge?.takeaways||[]).entries())nodes.push({id:'principle:'+active.id+':'+i,kind:'principle',label:text.split(/[，。；：]/)[0].slice(0,16),text,owner:active,parent:nodeId(active),count:new Set(active.knowledge.evidence.map(e=>e.sourceId)).size});
+ function place(id,depth=0){const p=nodes.find(n=>n.id===id),children=nodes.filter(n=>n.parent===id);children.forEach((n,i)=>{const a=i/Math.max(children.length,1)*Math.PI*2-Math.PI/2,spread=depth?125:185;n.x=p.x+Math.cos(a)*spread;n.y=p.y+Math.sin(a)*spread;n.z=p.z+Math.sin(a*1.7+depth)*75+(depth?65:0);n.depth=depth+1;edges.push({from:id,to:n.id});place(n.id,depth+1);});}place('root');
+ const pairMap=new Map();for(const r of data.relations){const a=data.cards.find(c=>c.id===r.from),b=data.cards.find(c=>c.id===r.to);const candidates=c=>nodes.filter(n=>n.raw&&sourceIds(n).has(c?.id)).sort((a,b)=>b.depth-a.depth);const from=candidates(a)[0],to=candidates(b)[0];if(!from||!to||from.id===to.id||descendants(from.raw).has(to.id)||descendants(to.raw).has(from.id))continue;const key=[from.id,to.id].sort().join('|');if(!pairMap.has(key))pairMap.set(key,{from:from.id,to:to.id,relation:true,reason:r.reason});}edges.push(...pairMap.values());
+ const graph=$('graph');graph.replaceChildren();const defs=svg('defs'),gradient=svg('radialGradient',{id:'sphere',cx:'.28',cy:'.22',r:'.8'});gradient.append(svg('stop',{offset:'0%','stop-color':'#d7e5b8'}),svg('stop',{offset:'65%','stop-color':'#718653'}),svg('stop',{offset:'100%','stop-color':'#3a503a'}));defs.append(gradient);graph.append(defs);rootGroup=svg('g');graph.append(rootGroup);
+ if(!nodes.some(n=>n.id===selected))selected='root';inspect(nodes.find(n=>n.id===selected));render();
+ $('node-list').replaceChildren();for(const n of nodes){const b=document.createElement('button');b.textContent=n.label+' · '+n.count;b.onclick=()=>choose(n.id);$('node-list').append(b);}
+}
+function render(){if(!data||!rootGroup)return;const graph=$('graph'),W=graph.clientWidth,H=graph.clientHeight;graph.setAttribute('viewBox',`0 0 ${W} ${H}`);graph.dataset.rotation=yaw.toFixed(3)+','+pitch.toFixed(3);graph.dataset.scale=scale.toFixed(2);
+ for(const n of nodes){const rx=n.x*Math.cos(yaw)-n.z*Math.sin(yaw),rz=n.x*Math.sin(yaw)+n.z*Math.cos(yaw),ry=n.y*Math.cos(pitch)-rz*Math.sin(pitch),z=n.y*Math.sin(pitch)+rz*Math.cos(pitch),s=1000/(1000+z);n.projected={x:rx*s,y:ry*s,z,s};}
+ const xs=nodes.map(n=>n.projected.x),ys=nodes.map(n=>n.projected.y),left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys),fit=Math.min(W/(right-left+200),H/(bottom-top+180),1.25)*scale;
+ for(const n of nodes){const p=n.projected;n.screen={x:W/2+(p.x-(left+right)/2)*fit,y:H/2+(p.y-(top+bottom)/2)*fit,z:p.z,r:Math.max(7,(n.kind==='root'?29:n.kind==='principle'?9:12+Math.cbrt(n.count)*5)*fit*p.s),s:p.s};}
+ rootGroup.replaceChildren();for(const e of edges){const a=nodes.find(n=>n.id===e.from)?.screen,b=nodes.find(n=>n.id===e.to)?.screen;if(!a||!b)continue;const line=svg('path',{d:`M${a.x},${a.y} L${b.x},${b.y}`,class:'edge'+(e.relation?' relation':'')});if(e.reason)line.append(svg('title',{},e.reason));rootGroup.append(line);}
+ const occupied=[];for(const n of [...nodes].sort((a,b)=>b.screen.z-a.screen.z)){const p=n.screen,g=svg('g',{class:'node '+n.kind+(n.id===selected?' selected':''),transform:`translate(${p.x},${p.y})`,role:'button',tabindex:0,'aria-label':n.label+'，'+n.count+' 条关联资料','data-id':n.id,opacity:Math.max(.55,Math.min(1,p.s))});g.append(svg('circle',{r:p.r,class:'orb'}));if(n.id===selected)g.append(svg('circle',{r:p.r+5,class:'halo'}));
+ const priority=n.id===selected||n.kind==='root'||n.depth===1,box={x:p.x-n.label.length*6,y:p.y+p.r+6,w:n.label.length*12,h:34};const overlap=occupied.some(b=>box.x<b.x+b.w&&box.x+box.w>b.x&&box.y<b.y+b.h&&box.y+box.h>b.y);if(priority||!overlap){occupied.push(box);g.append(svg('text',{'text-anchor':'middle',y:p.r+19,class:'node-label'},n.label),svg('text',{'text-anchor':'middle',y:p.r+34,class:'node-count'},n.count+' 条资料'));}g.append(svg('title',{},n.text||n.raw?.summary||n.label));g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id);}};g.onpointerdown=e=>start(e,n.id);rootGroup.append(g);}
+}
+function start(e,id){e.stopPropagation();drag={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,id,moved:false};$('graph').setPointerCapture(e.pointerId);}
+$('graph').onpointerdown=e=>start(e,null);
+$('graph').onpointermove=e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>5)drag.moved=true;if(drag.moved){yaw+=dx*.008;pitch=Math.max(-1.1,Math.min(1.1,pitch+dy*.008));render();}};
+$('graph').onpointerup=e=>{const d=drag;drag=null;if($('graph').hasPointerCapture(e.pointerId))$('graph').releasePointerCapture(e.pointerId);if(d&&!d.moved&&d.id)choose(d.id);};$('graph').onpointercancel=()=>drag=null;
+$('graph').addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.55,Math.min(2.5,scale*(e.deltaY>0?.94:1.06)));render();},{passive:false});
+$('zoom-in').onclick=()=>{scale=Math.min(2.5,scale+.15);render();};$('zoom-out').onclick=()=>{scale=Math.max(.55,scale-.15);render();};$('reset').onclick=()=>{yaw=0;pitch=.13;scale=1;selected='root';build();};
+$('graph').onpointerenter=()=>hovered=true;$('graph').onpointerleave=()=>hovered=false;
+function animate(time){if(time-last>40&&!document.hidden&&!hovered&&!$('graph').contains(document.activeElement)&&!drag&&data&&$('motion').getAttribute('aria-pressed')==='true'){yaw+=.0015;render();last=time;}requestAnimationFrame(animate);}
+$('motion').onclick=()=>{const on=$('motion').getAttribute('aria-pressed')!=='true';$('motion').setAttribute('aria-pressed',String(on));};requestAnimationFrame(animate);
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;selected='root';document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));build();});
+async function load(){try{const [graph,labels]=await Promise.all([KumoBridge.knowledge(),KumoBridge.tags()]);data=graph;tags=labels.tags;$('connection').textContent='';$('coverage').textContent=`${data.total} 条真实收藏 · ${data.compiled} 条已编译 · ${data.nodes.filter(n=>n.kind==='domain'&&!n.parentDomainId).length} 个主领域 · ${data.indexOnly||0} 条仅建索引`;build();}catch(e){$('connection').textContent='资料库暂时未连接，不会替换你的标签。'+e.message;}}
+$('reload').onclick=()=>void load();new ResizeObserver(render).observe($('graph'));void load();

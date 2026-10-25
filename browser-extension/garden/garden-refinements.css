@@ -1,0 +1,267 @@
+/* v25 · Outward shoots, quiet boundaries, flat warm-paper reading. */
+.garden-edge.membership.vine{display:block!important;fill:#78965e!important;fill-opacity:.83!important;stroke:none!important;stroke-dasharray:none!important;filter:none!important;animation:none!important}
+.garden-edge.membership.vine.m-topic-source{fill:#93aa76!important;fill-opacity:.7!important}
+.garden-edge.membership.vine.m-domain-source{fill:#8ca36f!important;fill-opacity:.72!important}
+.vine-leaves{display:block!important;fill:#bacb9c;fill-opacity:.95;stroke:none;pointer-events:none}
+.frag-vine{fill:#a9b78c!important;fill-opacity:.6!important;stroke:none!important}
+.frag-spot,.frag-bud,.topic-card{touch-action:none;cursor:grab}
+.frag-bud.dragging,.topic-card.dragging{cursor:grabbing}
+.frag-bud:focus-visible{outline:none;filter:drop-shadow(0 0 3px #668249)}
+.frag-bud:focus-visible .bud-glow{stroke:#668249;stroke-width:2}
+.topic-card-vines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.topic-post-vine{fill:#8aa371;fill-opacity:.8}
+.topic-post-leaves{fill:#bdcda1;fill-opacity:.95}
+.frag-leaves{fill:#bdcda1;fill-opacity:.94;stroke:none}
+.topic-card{border-radius:8px!important;background:#f7f5e9!important;box-shadow:0 2px 7px #404d2a12!important;animation-name:v24-card-in}
+.topic-card img{border-radius:4px!important}
+@keyframes v24-card-in{from{opacity:0}to{opacity:1}}
+
+
+/* Plain brown lead text; colour blocks only support counts and collected content. */
+#reader{--reading-paper:#faf5ea;--reading-line:#e8dfce;--reading-tint:#f2e8d3;--reading-ink:#674b36;--reading-muted:#95826b}
+#detail-title{font-weight:700!important;line-height:1.45;color:var(--reading-ink)!important}
+#detail-kind{color:#a18b6e!important;font-size:11px;letter-spacing:.05em}
+#detail-summary:not(:empty){padding:0!important;margin:11px 0 20px!important;border:0!important;border-radius:0!important;background:none!important;color:#88674b!important;font-size:14px!important;line-height:1.85!important;font-weight:400!important;box-shadow:none!important}
+#reader-body .readable-summary{margin:12px 0;color:#907c65;font-size:12.5px;line-height:1.85}
+#reader-body .dom-hero{padding:0!important;margin:4px 0 20px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important}
+#reader-body .dom-stats{flex:1;gap:7px;align-items:stretch}
+#reader-body .dom-stats>div{flex:1;min-width:0;display:grid;gap:5px;padding:10px 9px;border-radius:6px;background:#f2e9d4;border:0}
+#reader-body .dom-stats>div:nth-child(2){background:#f1e7dd}
+#reader-body .dom-stats>div:nth-child(3){background:#eeeadd}
+#reader-body .dom-stats b{font-size:22px;font-weight:600;color:#957042!important}
+#reader-body .dom-stats small{font-size:10px;color:#a18c70}
+#reader-body .dom-stage,#reader-body .dom-stage b{color:#988367!important;font-size:11px;font-weight:400}
+#reader-body .dom-card,#reader-body .reader-section{padding:0!important;margin:20px 0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important}
+#reader-body .dom-card>h3,#reader-body .reader-section>h3,#reader-body .reader-fragments>h3{padding:0!important;margin:0 0 10px!important;background:none!important;border:0!important;border-radius:0!important;font-size:12px!important;line-height:1.5;font-weight:650!important;color:#99754e!important;letter-spacing:.02em}
+#reader-body .dom-card>h3::before{content:none!important}
+#reader-body .content-row{padding:12px 0!important;border-top-color:#e9dfcd!important}
+#reader-body .content-row:hover{background:#f5eddc!important}
+#reader-body .content-head strong{font-weight:600!important;color:#75543b!important}
+#reader-body .content-head b,#reader-body .view-no{border-radius:4px;background:#eee2c9!important;color:#a17b45!important;font-weight:400!important}
+#reader-body .view-row{border-top-color:#e9dfcd!important}
+#reader-body .view-row strong{font-weight:600;color:#795b41!important}
+#reader-body .view-row p,#reader-body .content-row p{font-size:12.5px!important;line-height:1.8;color:#958068!important}
+#reader-body .essence-item{padding:11px 12px!important;background:#f3e9d4!important;border:0!important;border-radius:5px!important;color:#886a4c!important;line-height:1.8}
+#reader-body .digest-tags span,#reader-body .domain-card-tags i,#reader-body .topic-chip{background:#f2e8d3!important;border:0!important;border-radius:4px!important;color:#a18863!important;font-weight:400}
+#reader-body .reader-fragment{padding:11px!important;margin:9px 0!important;text-align:left;background:#faf3e4!important;border:1px solid #e9ddc6!important;border-radius:7px!important;box-shadow:none!important}
+#reader-body .reader-fragment:nth-of-type(2n){background:#f8eee3!important}
+#reader-body .reader-fragment:hover{border-color:#ceba98!important;background:#f3e7d1!important}
+#reader-body .reader-fragment strong{font-weight:600!important;color:#785638!important}
+#reader-body .reader-fragment p,#reader-body .reader-fragment small{color:#a38d70!important}
+#reader-body .reader-fragment-cover{border-radius:4px!important}
+.domain-cards{gap:0!important}
+.domain-card{padding:14px 0!important;border:0!important;border-bottom:1px solid #e9dfcc!important;border-radius:0!important;background:none!important;box-shadow:none!important}
+.domain-card:hover{background:#f5edda!important}
+.domain-card strong{color:#75573e!important;font-weight:600!important}
+.domain-card small,.domain-card-count em{color:#a18c70!important}
+.domain-card-count b{color:#ab8148!important;font-weight:500}
+.domain-medallion::before,.domain-medallion[class*=fam-]::before{background:transparent!important}
+.today-cell{border:0!important;border-radius:6px!important;background:#f3ead4!important;box-shadow:none!important;color:#a17a48!important}
+.today-cell:nth-child(2){background:#f2e6dc!important}.today-cell:nth-child(3){background:#eee9dc!important}
+.today-cell b{color:#997344!important}.today-cell small{color:#ab9371!important}
+.garden-line{border:0!important;border-radius:6px;background:#f5eddb!important;color:#a18b6b;box-shadow:none}
+.garden-line b{color:#a07b4d}.garden-line progress,.dom-hero progress{accent-color:#bd9a5a}
+#reader .resume-reading,#reader .home-heading{color:#9b7850!important}
+.topic-card{background:#fbf3de!important;border-color:#e4d6b9!important;color:#785a3e!important;box-shadow:none!important}
+.topic-card:nth-of-type(2){background:#f7ece0!important}.topic-card:nth-of-type(3){background:#f0edd9!important}
+.topic-card strong{color:#785a3e!important}.topic-card small{color:#aa9270!important}
+.fragment-pop{background:#fcf6e8!important;border:1px solid #dfcfb3!important;border-radius:8px!important;box-shadow:0 5px 15px #72563814!important}
+.fp-title{color:#76563b!important}.fp-meta,.fp-trail,.fp-flag{color:#a58a67!important}
+.fp-point{background:#f3e8d0!important;border:0!important;border-radius:4px!important;color:#8f714e!important}.fp-point b{color:#a48657!important}
+.fp-foot button{border-color:#e1d3b8!important;background:#f8efdb!important;color:#9b794d!important}
+body[data-garden-style] .garden-node .name,body[data-garden-style] .domain-caption .name{fill:#795a3e!important}
+body[data-garden-style] .garden-edge.hierarchy:not(.membership){stroke:#78915d!important;stroke-width:3.1!important;stroke-dasharray:none!important;filter:none!important}
+.branch-leaves path{fill:#b8c99c!important;stroke:#aabd8d!important;stroke-opacity:.6}
+.garden-edge.relation,.garden-edge.source-relation,.garden-edge.internal-relation,.garden-edge.related-peek,.relation-trigger{display:none!important}
+.fresh-sprout,.fresh-dot,.fresh-halo,.map-legend,#field-options,.field-legend>span:has(.lg-fresh){display:none!important}
+.bud-glow{fill:#f3e8c5!important;fill-opacity:.28}
+/* Remove inherited decorative gradients from controls, cards and medallions. Paper grain stays below the artwork. */
+#reader,#reader-body :is(.dom-card,.dom-hero,.domain-card,.reader-fragment,.reader-section,.essence-item,.seed-strip,.glance,.today-cell,.intro-art,.discovery-reward),#detail-summary,.topic-card,.fragment-pop,.fragment-pop *,.knowledge-fragment,.node-preview,.preview-media,.atlas-item,.atlas-item[data-rarity],.garden-core .core-pond,.node-bubble,.toolbar,.garden-lenses button,header{background-image:none!important}
+.domain-medallion::before{background-image:none!important}
+body[data-edition=living][data-garden-style],.home-opportunity,.exploration-entry,.automatic-summary,.discovery-hero{background-image:none!important}
+.atlas-item,.atlas-item[data-rarity]{background-color:#faf0d5!important}.atlas-item[data-rarity="3"]{background-color:#f6e5d4!important}.atlas-item[data-rarity="4"]{background-color:#eee7d6!important}
+body[data-garden-style=colored-scribble] .preview-heading h1::after{background:#c6a45e!important}
+.node-preview{background:#fcf6e8!important;border-color:#e5d8bd!important;color:#805e3d!important;box-shadow:none!important}
+.node-preview strong{color:#805e3d!important}
+@media(prefers-reduced-motion:reduce){.topic-card{animation:none!important}}
+
+/* v26 · Light cards and Kumo-green information, without changing the node artwork. */
+#reader{--reading-paper:#fffefa;--reading-line:#e3e7dc;--reading-tint:#f5f6ef;--reading-ink:#48684b;--reading-muted:#8b9485}
+#detail-title,#reader .home-heading{color:#45684b!important}
+#detail-kind{color:#8d9b87!important}
+#detail-summary:not(:empty){color:#798369!important}
+#reader-body .dom-stats>div,#reader-body .dom-stats>div:nth-child(2),#reader-body .dom-stats>div:nth-child(3){background:#f5f6ef!important}
+#reader-body .dom-stats b{color:#617d52!important}
+#reader-body .dom-stats small,#reader-body .dom-stage,#reader-body .dom-stage b{color:#929780!important}
+#reader-body .dom-card>h3,#reader-body .reader-section>h3,#reader-body .reader-fragments>h3{color:#638257!important}
+#reader-body .content-head strong,.domain-card strong{color:#4c6c4b!important}
+#reader-body .content-head b,#reader-body .view-no{background:#f0f3e9!important;color:#84906d!important}
+#reader-body .content-row:hover,.domain-card:hover{background:#f7f8f1!important}
+#reader-body .view-row strong{color:#58734f!important}
+#reader-body .view-row p,#reader-body .content-row p{color:#8b9380!important}
+#reader-body .essence-item{background:#f8f8f2!important;color:#859075!important}
+#reader-body .digest-tags span,#reader-body .domain-card-tags i,#reader-body .topic-chip{background:#f4f6ed!important;color:#8b9677!important}
+#reader-body .reader-fragment,#reader-body .reader-fragment:nth-of-type(2n){background:#fffefa!important;border-color:#e4e7dc!important}
+#reader-body .reader-fragment:hover{background:#fafbf5!important;border-color:#cdd8bd!important}
+#reader-body .reader-fragment strong{color:#55724e!important}
+#reader-body .reader-fragment p,#reader-body .reader-fragment small,.domain-card small{color:#8c9681!important}
+.domain-card-count b,.domain-card-count em{color:#7c8d64!important}
+.today-cell,.today-cell:nth-child(2),.today-cell:nth-child(3),.garden-line{background:#f7f8f1!important}
+.today-cell b,.garden-line b{color:#73905f!important}.today-cell small,.garden-line{color:#929b82!important}
+.topic-card,.topic-card:nth-of-type(2),.topic-card:nth-of-type(3),.fragment-pop{background:#fffefa!important;border-color:#dfe5d4!important;box-shadow:0 3px 12px #5268400d!important}
+.topic-card strong,.fp-title{color:#56754e!important}.topic-card small,.fp-meta,.fp-trail,.fp-flag{color:#939e86!important}
+.fp-point{background:#f7f8f0!important;color:#849074!important}.fp-point b{color:#819368!important}
+.fp-foot button{background:#fbfcf6!important;border-color:#e1e6d7!important;color:#81936f!important}
+.node-preview{background:#fffefa!important;border-color:#dfe5d4!important;color:#57734e!important}.node-preview strong{color:#57734e!important}
+body[data-garden-style] .garden-node .name,body[data-garden-style] .domain-caption .name{fill:#4e764b!important}
+.plat-youtube{background:#8d9d79!important}
+.garden-edge.membership.vine.branch-topic{fill:#839969!important}
+.garden-edge.membership.vine.branch-post{fill:#a0b183!important}
+.vine-leaves,.frag-leaves,.topic-post-leaves{fill:#c5d3a5!important;fill-opacity:1}
+body[data-garden-style] .garden-edge.hierarchy.branch-trunk{stroke-width:4.2!important}
+body[data-garden-style] .garden-edge.hierarchy.branch-topic{stroke-width:3.2!important}
+body[data-garden-style] .garden-edge.hierarchy.branch-post{stroke-width:1.9!important}
+.core-root{fill:#9db486;fill-opacity:.22;stroke:none;pointer-events:none}
+.core-root-leaves{fill:#c8d5b0;fill-opacity:.5;stroke:none}
+.core-rosette{fill:#e5ecd7;fill-opacity:.5;stroke:#b3c597;stroke-width:1;stroke-opacity:.35}
+.garden-core .core-pond{fill:#fcfdf7!important;stroke:#9db385!important;stroke-opacity:.4;stroke-width:1.2}
+.core-paired-leaves{fill:#b6c99a;fill-opacity:.7;stroke:none;pointer-events:none}
+.garden-core .core-caption{fill:#81956b!important;font-size:16px!important;font-weight:500}
+#tooltip{background:#fffefa!important;border:1px solid #dce4d2!important;border-radius:8px!important;box-shadow:0 5px 16px #52684012!important;color:#5c7950!important;max-width:282px}
+#tooltip .tooltip-intro{color:#8d987e;font-size:11px;line-height:1.65}
+.tooltip-domain-contents{display:grid;gap:7px;margin-top:10px;padding-top:8px;border-top:1px solid #eef0e6}
+.tooltip-domain-row{display:flex;align-items:center;gap:8px;min-width:0;font-size:11px;line-height:1.45;color:#788d65}
+#tooltip .tooltip-domain-row img{float:none;width:36px;height:29px;object-fit:cover;flex:none;border-radius:3px;margin:0}
+.tooltip-domain-row span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* v27 · Cellular garden: quiet translucent parcels and a larger living centre. */
+.colony-frost-edge{fill:none!important;stroke:#fffff4!important;stroke-width:.85;stroke-opacity:.7;stroke-dasharray:.5 2.8;stroke-linecap:round;vector-effect:non-scaling-stroke;pointer-events:none}
+body[data-garden-style] .colony-border-trace{stroke-width:.7!important;stroke-opacity:.16!important;stroke-dasharray:1 3}
+.core-root{fill:#9cb181;fill-opacity:.3}
+.core-root-leaves{fill:#bccfa2;fill-opacity:.65}
+.core-rosette{fill:#dce8ce;fill-opacity:.58;stroke:#a9bf8f;stroke-opacity:.38}
+.core-paired-leaves{fill:#a9c18e;fill-opacity:.78}
+.garden-core .core-caption{font-size:18px!important}
+.core-wave{fill:none;stroke:#afc496;stroke-width:1.2;stroke-opacity:0;vector-effect:non-scaling-stroke;transform-box:fill-box;transform-origin:center;animation:cellular-ripple 7s ease-out infinite;pointer-events:none}
+@keyframes cellular-ripple{0%{transform:scale(.9);stroke-opacity:0}18%{stroke-opacity:.33}100%{transform:scale(1.18);stroke-opacity:0}}
+@media(prefers-reduced-motion:reduce){.core-wave{animation:none;stroke-opacity:.13;transform:scale(1.08)}.core-wave+.core-wave{display:none}}
+
+/* v29 · Denser planting, stronger ink edges and lighter open ground. */
+.plat.plat-xhs{width:20px;height:20px;background:#ff2442!important;border-radius:4px;overflow:hidden;line-height:0}
+.plat img.plat-logo,#tooltip .plat img.plat-logo{display:block;float:none;width:100%;height:100%;max-width:none;margin:0;border-radius:0;object-fit:contain;filter:none;opacity:1}
+.colony-frost-edge{stroke-width:.6;stroke-opacity:.45}
+body[data-garden-style] .colony-border-trace{stroke-width:.85!important;stroke-opacity:.25!important}
+
+/* v31 · Soft membranes: frosted edges stay behind crisp content. */
+.colony-frost-band{fill:none!important;stroke:#fcfff6;stroke-width:5.5;stroke-opacity:.22;filter:blur(.7px);vector-effect:non-scaling-stroke;pointer-events:none}
+.colony-frost-edge{stroke-width:.8;stroke-opacity:.5;stroke-dasharray:.4 2}
+.node-centre-dot{fill:#427b52;stroke:#fffef6;stroke-width:.85;vector-effect:non-scaling-stroke;pointer-events:none}
+body[data-garden-style] .topic-habitat .garden-patch{fill:var(--colony-color)!important;fill-opacity:.045!important;stroke:var(--colony-color)!important;stroke-opacity:.28!important;stroke-width:.8!important;vector-effect:non-scaling-stroke}
+.topic-frost-border{fill:none;stroke:#fdfff7;stroke-opacity:.35;stroke-width:1.6;vector-effect:non-scaling-stroke;pointer-events:none}
+.quiet-core .core-seed-ground{fill:#fffef7;fill-opacity:.93;stroke:#b4c6a0;stroke-width:1;stroke-opacity:.38;vector-effect:non-scaling-stroke}
+
+/* v32 · Domain landscapes and a quiet, larger focal seed. */
+.region-signature{fill:none!important;stroke:var(--colony-color,#809779);stroke-width:.9;stroke-opacity:.4;vector-effect:non-scaling-stroke;pointer-events:none}
+.colony-border[data-terrain=frond] .garden-patch{stroke-dasharray:5 2}
+.colony-border[data-terrain=leaf] .garden-patch{stroke-dasharray:1 3;stroke-linecap:round}
+.colony-border[data-terrain=fan] .garden-patch{stroke-dasharray:8 2 1 2}
+.colony-border[data-terrain=seed] .garden-patch{stroke-dasharray:3 5;stroke-linecap:round}
+.core-root.stem-route{fill:none;stroke:#78946b;stroke-width:1.25;stroke-opacity:.58;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.core-root-leaves.stem-leaves{fill:#bdcda7;fill-opacity:.85;stroke:none}
+.core-living-ring{fill:#b3c69e;fill-opacity:.035;stroke:#a2b78b;stroke-width:.8;stroke-opacity:.34;vector-effect:non-scaling-stroke;pointer-events:none}
+.core-living-ring.ring-1{fill-opacity:.025;stroke-opacity:.22}.core-living-ring.ring-2{fill:none;stroke-opacity:.13}
+.quiet-core .core-seed-ground{fill:#fffef7;fill-opacity:.96;stroke-opacity:.24}
+.remix-nodes,.undo-remix{font-size:11px;padding:6px 9px;border:1px solid #dce2d2;border-radius:5px;background:#fffef7;color:#6a825b}
+.canvas-actions{flex-wrap:wrap;gap:7px}.toolbar{flex-wrap:wrap}
+.logo-choices{margin:8px 0 26px;padding-bottom:20px;border-bottom:1px solid #e5e8dc}.logo-choices h3{font-size:13px;font-weight:600;margin:0 0 12px;color:#637f54}
+.logo-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.logo-choice{padding:7px 4px;background:#fffefa;border:1px solid #e2e6d9;border-radius:7px;min-width:0}.logo-choice[aria-pressed=true]{border-color:#86a375;background:#f4f7ed}.logo-choice img,.logo-original-mark{display:block;width:48px;height:48px;object-fit:contain;border-radius:7px;margin:0 auto 6px}.logo-original-mark{font:42px/48px Georgia,serif;color:#668054;background:#faf9ef}.logo-choice small{font-size:10px;color:#8b977d;white-space:normal}.logo-gallery-link{display:inline-block;margin-top:12px;font-size:11px;color:#7f9270;text-underline-offset:3px}
+.region-choices{margin:5px 0 24px;padding-bottom:18px;border-bottom:1px solid #e5e8dc}.region-choices h3{font-size:13px;color:#637f54;margin:0 0 10px}.region-expression-choice{display:block;width:100%;text-align:left;padding:10px;margin:6px 0;border:1px solid #e1e6d7;border-radius:6px;background:#fffefa}.region-expression-choice[aria-pressed=true]{border-color:#8ba47b;background:#f6f8ef}.region-expression-choice strong{display:block;font-size:12px;font-weight:500;color:#637e56}.region-expression-choice small{display:block;font-size:10px;line-height:1.6;color:#929e83;margin-top:4px}
+body[data-region-expression=veins] .garden-plot .colony-frost-band,body[data-region-expression=veins] .garden-plot .colony-frost-edge,body[data-region-expression=veins] .garden-plot .colony-border-trace,body[data-region-expression=veins] .garden-plot .region-signature{display:none}
+body[data-region-expression=veins] .topic-habitat .garden-patch{fill-opacity:.025!important;stroke-opacity:.12!important}
+body[data-region-expression=contour] .region-signature{stroke-opacity:.55;stroke-width:1}
+
+/* v33 · Empty interiors, paired outlines and a restrained sand-colour reader. */
+.outline-interweave,.outline-green-halo,.outline-ripple{fill:none!important;pointer-events:none;vector-effect:non-scaling-stroke;filter:none!important;stroke-linejoin:round;stroke-linecap:round}
+.outline-interweave{stroke:var(--colony-color,#92a777);stroke-width:.85;stroke-opacity:.36}
+.outline-green-halo{stroke:#afc39b;stroke-width:4;stroke-opacity:.065}
+.outline-ripple{stroke:#9ab584;stroke-width:.75;stroke-opacity:.18;animation:outline-breathe 8s ease-in-out infinite}
+.garden-plot[data-outline=dashed] .outline-ripple{stroke-dasharray:1 4;stroke-opacity:.14}
+.garden-plot[data-outline=veins] :is(.outline-interweave,.outline-green-halo,.outline-ripple){display:none}
+.garden-plot :is(.colony-border-trace,.region-signature,.soil-rim,.habitat-edge-mark,.colony-frost-band,.colony-frost-edge){display:none!important}
+.garden-plot .garden-patch{filter:none!important;stroke-linecap:round}
+.garden-plot .garden-patch-extension{fill-opacity:0!important;stroke:none!important}
+.garden-terrain{display:none}
+body[data-garden-style] .topic-habitat .garden-patch{fill-opacity:.018!important;stroke-opacity:.22!important;stroke-width:.75!important;stroke-dasharray:3 3;filter:none!important}
+.topic-frost-border{stroke-opacity:.09;stroke-width:3;stroke-dasharray:none;filter:none}
+.node-bubble{fill-opacity:.025!important;filter:none!important;stroke-dasharray:4 3!important;stroke-width:.85!important;stroke-opacity:.26!important}
+.centre-emblem{--colony-color:#a5a477}
+.centre-emblem .emblem-main{fill:none;stroke:#a4a273;stroke-opacity:.56;stroke-width:1.05;vector-effect:non-scaling-stroke;pointer-events:none}
+.centre-emblem[data-outline=dashed] .emblem-main{stroke-dasharray:4 3}
+.centre-emblem .outline-interweave{stroke:#8fa67e;stroke-opacity:.34;stroke-width:.8}
+.centre-emblem .outline-green-halo{stroke-width:5;stroke-opacity:.065}
+.centre-emblem .outline-ripple{stroke-opacity:.16;animation-duration:9s}
+.quiet-core .core-seed-ground{fill:#fbf9f1;stroke:none;fill-opacity:1}
+.centre-emblem image{pointer-events:none}
+@keyframes outline-breathe{0%,100%{stroke-opacity:.09}50%{stroke-opacity:.24}}
+@media(prefers-reduced-motion:reduce){.outline-ripple{animation:none;stroke-opacity:.15}}
+#reader{--reading-paper:#fffdf8;--reading-line:#e4dbcc;--reading-tint:#f2eadc;--reading-ink:#5e704f;--reading-muted:#978a75}
+#reader-body :is(.dom-hero,.dom-card,.reader-section){background:transparent!important;background-image:none!important}
+#reader-body .dom-stats>div,#reader-body .dom-stats>div:nth-child(2),#reader-body .dom-stats>div:nth-child(3),#reader-body .glance,.today-garden>.today-cell,.garden-line{background:#f1eadf!important;background-image:none!important;border-color:#e3d8c7!important;box-shadow:none!important}
+#reader-body .dom-stats>div:nth-child(2),.today-garden>.today-cell:nth-child(2){background:#f4edde!important}
+#reader-body .dom-stats b,.today-garden>.today-cell b,.garden-line b{color:#947d53!important}
+#reader-body .dom-stats small,.today-garden>.today-cell small,.garden-line,.glance-line{color:#a08f75!important}
+#reader-body .essence-item{background:#f5efe4!important;border-left-color:#d5c5a7!important;color:#88765b!important}
+#reader-body .reader-fragment,#reader-body .reader-fragment:nth-of-type(2n){background:#fffdf8!important;background-image:none!important;border-color:#e6ddcf!important}
+#reader-body .reader-fragment:hover,#reader-body .content-row:hover,.domain-card:hover{background:#f6efe3!important}
+#reader-body .content-head b,#reader-body .view-no,#reader-body .digest-tags span,#reader-body .domain-card-tags i,#reader-body .topic-chip,.domain-card .digest-tags span,.domain-card [class*=tag]{background:#eee3cf!important;color:#8b7757!important;background-image:none!important;border-color:transparent!important}
+#reader-body .home-heading{color:#8f7953!important;font-weight:600!important}
+#reader-body .home-heading.domain-section-heading{display:inline-block;margin:22px 0 8px;padding:5px 11px;border-radius:4px;background:#e9ddc5;color:#806b46!important;border:1px solid #dfd0b4;font-size:12px;line-height:1.5}
+.domain-card{background:transparent!important;border-bottom-color:#e7ddcc!important}
+.domain-medallion::before,.domain-medallion[class*=fam-]::before{background:transparent!important}
+.logo-choice[aria-pressed=true],.region-expression-choice[aria-pressed=true]{background:#f2ecde;border-color:#bcaa83}
+
+/* v34 · Kumo returns, two distinct interlaced outlines and a thin translucent rim. */
+.outline-interweave{stroke:var(--colony-color,#92a777);stroke-width:.95;stroke-opacity:.41}
+.outline-green-halo{fill:#b8c99e!important;fill-rule:evenodd;fill-opacity:.1;stroke:#b6c69c;stroke-width:.6;stroke-opacity:.13}
+.outline-ripple{stroke-width:.8;stroke-opacity:.2}
+.centre-emblem .emblem-main{stroke:#9b9a68;stroke-opacity:.66;stroke-width:1.15}
+.centre-emblem .outline-interweave{stroke:#aebc94;stroke-opacity:.5;stroke-width:.9}
+.centre-emblem .outline-green-halo{fill-opacity:.08;stroke-width:.6;stroke-opacity:.14}
+.core-root.stem-route{stroke:#91a77c;stroke-width:var(--root-width,1.4);stroke-opacity:.61}
+.core-root-accent{fill:none;stroke:#d4dfb3;stroke-width:.65;stroke-dasharray:18 35;stroke-opacity:.65;stroke-linecap:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.rim-seed-twig{fill:none;stroke:#a8bb89;stroke-width:1;stroke-opacity:.65;vector-effect:non-scaling-stroke;pointer-events:none}
+body[data-region-expression=veins] .rim-seed-layer{display:none}
+#reader{--reading-paper:#fffef9;--reading-line:#e7e9d9;--reading-tint:#faf5df;--reading-ink:#56724b;--reading-muted:#899276}
+#reader-body .dom-stats>div,#reader-body .glance,.today-garden>.today-cell,.garden-line{background:#fbf7e6!important;border-color:#ede9d4!important;color:#84906c!important}
+#reader-body .dom-stats>div:nth-child(2),.today-garden>.today-cell:nth-child(2){background:#fff3e2!important}
+#reader-body .dom-stats>div:nth-child(3),.today-garden>.today-cell:nth-child(3){background:#f5f6e8!important}
+#reader-body .dom-stats b,.today-garden>.today-cell b,.garden-line b{color:#7b8b57!important}
+#reader-body .dom-stats small,.today-garden>.today-cell small,.glance-line{color:#90987b!important}
+#reader-body .essence-item{background:#fcf7e6!important;border-left-color:#dfe2bd!important;color:#798367!important}
+#reader-body .reader-fragment,#reader-body .reader-fragment:nth-of-type(2n){background:#fffef9!important;border-color:#e7e8d9!important}
+#reader-body .reader-fragment:nth-of-type(2n){background:#fffaf0!important}
+#reader-body .reader-fragment:hover,#reader-body .content-row:hover,.domain-card:hover{background:#faf7e7!important}
+#reader-body .content-head b,#reader-body .view-no,#reader-body .digest-tags span,#reader-body .domain-card-tags i,#reader-body .topic-chip,.domain-card .digest-tags span,.domain-card [class*=tag]{background:#f5f1d9!important;color:#8b916b!important}
+#reader-body .home-heading{color:#688051!important}
+#reader-body .home-heading.domain-section-heading{background:#f4eed3;border-color:#e9dfb8;color:#78844f!important}
+.logo-choice[aria-pressed=true],.region-expression-choice[aria-pressed=true]{background:#f7f5df;border-color:#b9c39a}
+
+/* v35 · Rounded contours and a wider, quietly translucent surround. */
+.outline-green-halo{fill-opacity:.075;stroke-opacity:.10}
+.centre-emblem .outline-green-halo{fill-opacity:.065;stroke-opacity:.11}
+.outline-ripple{stroke-opacity:.16;stroke-width:.7}
+.core-root.stem-route{stroke-opacity:.59;stroke-linecap:round;stroke-linejoin:round}
+.core-root-accent{stroke-opacity:.27;stroke-dasharray:none;stroke-width:.5}
+.quick-logo-picker{display:inline-flex;gap:7px;align-items:center;font-size:11px;color:#82906d;white-space:nowrap}
+.quick-logo-picker select{font:inherit;max-width:150px;padding:5px 23px 5px 8px;border:1px solid #dee4cf;border-radius:5px;background:#fffdf6;color:#6e8259;cursor:pointer}
+.quick-logo-picker select:focus-visible{outline:2px solid #a9bd8e;outline-offset:2px}
+@media(max-width:520px){.quick-logo-picker select{max-width:130px}.canvas-actions{row-gap:8px}}
+
+/* v36 · A larger paper mark with its own full background, growing from shared stems. */
+.core-trunk{fill:none;stroke:#8fa779;stroke-width:1.85;stroke-opacity:.58;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.core-root.stem-route{stroke-width:var(--root-width,1.3);stroke-opacity:.55}
+.core-root-accent{display:none}
+.centre-emblem .emblem-main{stroke-opacity:.51}.centre-emblem .outline-interweave{stroke-opacity:.36}
+.density-picker{display:inline-flex;align-items:center;gap:6px;color:#879473;font-size:11px;white-space:nowrap}
+.density-picker select{font:inherit;padding:5px 7px;max-width:125px;border:1px solid #dfe5d2;border-radius:5px;background:#fffdf6;color:#758861}
+.density-picker[hidden]{display:none!important}

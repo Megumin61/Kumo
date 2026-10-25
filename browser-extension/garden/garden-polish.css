@@ -1,0 +1,116 @@
+/* Warm brown lettering with a paper halo instead of a boxed label. */
+body[data-garden-style] .domain-caption rect{fill:transparent!important;stroke:none!important;filter:none;pointer-events:all}
+body[data-garden-style] .topic-label-bg{display:none}
+body[data-garden-style] .domain-caption .name,body[data-garden-style] .garden-node .name{fill:#694b36!important;stroke:var(--style-paper);stroke-width:3px;stroke-linejoin:round;paint-order:stroke fill;font-weight:600}
+body[data-garden-style] .garden-node .count{fill:#694b36;stroke:var(--style-paper);paint-order:stroke fill}
+body[data-garden-style] .count-badge text{fill:#694b36}
+.garden-node:hover .name,.garden-node:focus .name{opacity:1!important}
+
+/* One roomy option per row; switching keeps the same controls and scroll position. */
+.style-options-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:stretch;overflow-anchor:none}
+.style-options-grid .garden-style-card{display:flex;flex-direction:row!important;align-items:center;justify-content:space-between;gap:10px!important;min-height:142px!important;height:100%;padding:14px 10px!important;margin:0!important;border-width:1.5px;border-radius:14px;box-shadow:none}
+.style-options-grid .garden-style-card>div:first-child{flex:1!important;min-width:0}
+.style-options-grid .garden-style-card strong{display:block;padding-right:6px;font-size:13px!important;line-height:1.5;min-height:0}
+.style-options-grid .garden-style-card p{font-size:10px!important;line-height:1.6;margin:4px 0 0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:32px}
+.style-options-grid .style-card-samples{display:grid;grid-template-columns:repeat(2,32px);gap:3px 8px;align-self:center;transform:none!important;margin:0!important;max-width:100%}
+.style-options-grid .style-check{top:7px;right:7px;width:16px;height:16px;line-height:16px;font-size:10px}
+.style-options-grid .garden-style-card.selected{outline:2px solid #6f8c5e;outline-offset:-2px}
+.style-options-grid .garden-style-card strong{font-size:15px!important;line-height:1.55;padding-right:0}
+.style-options-grid .style-card-samples.colony-style-swatch{display:block;position:relative;width:128px;height:96px;flex:0 0 128px;max-width:none;align-self:center;overflow:visible}
+.colony-style-swatch>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.colony-style-swatch>.catalogue-art{position:absolute;z-index:1;transform:translate(-50%,-50%)}
+.colony-style-swatch .swatch-main{left:51%;top:44%}
+.colony-style-swatch .swatch-leaf-a{left:21%;top:68%}
+.colony-style-swatch .swatch-leaf-b{left:80%;top:43%}
+.colony-border-trace{fill:none;stroke:var(--colony-color);stroke-opacity:calc(var(--colony-stroke)*.6);stroke-width:.85;pointer-events:none}
+.colony-border .garden-patch{stroke-linecap:round;stroke-linejoin:round}
+.border-ink .colony-border-trace{stroke-dasharray:20 5 3 7}
+.border-crayon .garden-patch{stroke-dasharray:2 3 8 3}
+.border-crayon .colony-border-trace{stroke-dasharray:5 6;stroke-width:1.4;stroke-opacity:.11}
+.border-doodle .garden-patch{stroke-width:1.15}
+.border-seal .colony-border-trace{stroke-width:1.1;stroke-opacity:.12}
+.border-vintage .garden-patch{stroke-dasharray:32 4 9 3}
+.border-vintage .colony-border-trace{stroke-dasharray:2 8}
+.border-guide .garden-patch{stroke-dasharray:7 6}
+.border-guide .colony-border-trace{stroke-dasharray:1 16;stroke-width:2;stroke-linecap:round}
+.border-pop .garden-patch{stroke-width:1.8}
+.border-scribble .colony-border-trace{stroke-dasharray:16 4 2 7;stroke:#7e9c7c;stroke-opacity:.17}
+.border-wash .garden-patch{stroke:none!important;filter:blur(2px)}
+.border-wash .garden-patch-extension{filter:blur(5px)}
+.border-print .colony-border-trace{transform:translate(3px,-2px);stroke-width:1.2;stroke-opacity:.17}
+.border-pencil .garden-patch{stroke-dasharray:25 2 8 2}
+.border-pencil .colony-border-trace{stroke-dasharray:12 4;stroke-width:.9;stroke-opacity:.16}
+body[data-garden-style] .soil-rim{opacity:.15}
+/* Paper belongs to the bottom canvas. Artwork is never faded to show its status. */
+body[data-garden-style] .stage{isolation:isolate}
+body[data-garden-style] #chart{position:relative;z-index:1}
+body[data-garden-style] .stage::before,body[data-garden-style] .stage::after{display:none!important}
+body[data-garden-style] .garden-nodes{isolation:isolate;mix-blend-mode:normal}
+body[data-garden-style] .garden-node.is-waiting .specimen-art{opacity:1!important;filter:none!important}
+body[data-garden-style] .garden-node.source .specimen-art,body[data-garden-style] .garden-node.topic .specimen-art{mix-blend-mode:normal;filter:none}
+.waiting-dot{fill:#a5844e;stroke:#fffdf4;stroke-width:1.3;pointer-events:none}
+body[data-garden-style=woodland-seal] .garden-patch{stroke-dasharray:none;stroke-opacity:.32!important}
+.border-seal .colony-border-trace{stroke-opacity:.19}
+.border-crayon .colony-border-trace{stroke-opacity:.19}
+.border-wash .garden-patch{filter:none;stroke:var(--colony-color)!important;stroke-width:.85}
+/* Readable details and genuine source relations. */
+body[data-garden-style] .garden-node:not(.discovery) .specimen-art{filter:saturate(1.14)!important}
+body[data-garden-style] .garden-node.is-waiting .specimen-art{filter:saturate(1.14)!important}
+.colony-border{filter:saturate(1.12)}
+.internal-evidence:not(.internal-active){display:inline!important}
+.garden-edge.membership,.garden-edge.hierarchy{stroke-dasharray:5 6!important;stroke-opacity:.44;stroke-width:1.05;stroke-linecap:round}
+.garden-edge.internal-relation,.garden-edge.source-relation{stroke:#9c865f!important;stroke-width:1.3!important;stroke-opacity:.42;stroke-dasharray:7 5!important;stroke-linecap:round;fill:none}
+.internal-active .garden-edge.internal-relation,.internal-active .garden-edge.source-relation{stroke-opacity:.82;stroke-width:1.8!important}
+.garden-edge.relation{stroke:#8d805a!important;stroke-width:1.5!important;stroke-dasharray:8 6!important;stroke-opacity:.64;stroke-linecap:round}
+.count-badge text{font-weight:650;font-variant-numeric:tabular-nums}
+.fresh-dot{fill:#caa24e;stroke:#fffdf4;stroke-width:1.2}
+#tooltip{width:248px;max-width:calc(100% - 20px);padding:12px 13px;border:1px solid #e1dac9;border-radius:13px;background:#fffdf7;box-shadow:0 7px 24px #59462c15;color:#624b36}
+#tooltip strong{font-size:13px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#tooltip .tooltip-meta{display:block;margin-top:5px;color:#8a755b;font-size:11px}
+#tooltip .tooltip-intro{font-size:12px;line-height:1.65;color:#77634d;margin:7px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@keyframes garden-line-flow{to{stroke-dashoffset:-56}}
+@media(prefers-reduced-motion:no-preference){.garden-edge.internal-relation,.garden-edge.source-relation,.garden-edge.relation{animation:garden-line-flow 8s linear infinite}.garden-edge.hierarchy,.garden-edge.membership{animation:garden-line-flow 15s linear infinite}}
+@media(prefers-reduced-motion:reduce){.garden-edge{animation:none!important}}
+/* Main veins stay clear; evidence lines appear only in the current reading focus. */
+.garden-edge.hierarchy{stroke:#78935e!important;stroke-width:2!important;stroke-opacity:.9;stroke-dasharray:none!important;vector-effect:non-scaling-stroke;animation:none!important}
+.branch-leaves{fill:#87a46b;stroke:#718d58;stroke-width:.4;opacity:.88}
+.garden-edge.membership{stroke:#9da88a!important;stroke-width:.9!important;stroke-opacity:.55;stroke-dasharray:3 14!important;animation:none!important}
+.garden-edge.internal-relation,.garden-edge.source-relation{stroke:#a79576!important;stroke-width:1.05!important;stroke-opacity:1!important;stroke-dasharray:4 18!important;animation-duration:18s;vector-effect:non-scaling-stroke}
+.garden-edge.relation{stroke:#9f947a!important;stroke-width:1.05!important;stroke-opacity:1!important;stroke-dasharray:5 21!important;animation-duration:20s;vector-effect:non-scaling-stroke}
+.relation-trigger rect{fill:#fffdf5;fill-opacity:.94;stroke:#d8d0be;stroke-width:.8}
+.relation-trigger text{fill:#87745d;font-size:11px}
+.colony-border .garden-patch{stroke-opacity:.3!important;stroke-width:1.05!important;filter:drop-shadow(0 1px 2px #fff9)}
+.colony-border .garden-patch-extension{filter:blur(5px);fill-opacity:.035}
+.colony-border-trace{stroke-opacity:.1!important;stroke-width:.65!important}
+.colony-bubble-glint{fill:none;stroke:white;stroke-opacity:.7;stroke-width:2.3;stroke-linecap:round;stroke-dasharray:18 82;stroke-dashoffset:-55;pointer-events:none}
+.garden-node.discovery .node-art{opacity:.86}
+.garden-node.discovery[data-discovery-state=locked] .specimen-art{opacity:.38!important}
+/* One style per row: title and introduction above four comparable samples. */
+.style-options-grid .garden-style-card{flex-direction:column!important;align-items:stretch;gap:12px!important;padding:16px!important;min-height:144px!important}
+.style-options-grid .garden-style-card>div:first-child{flex:none!important;text-align:left}
+.style-options-grid .garden-style-card strong{padding-right:20px;font-size:15px!important}
+.style-options-grid .garden-style-card p{min-height:0;margin-top:5px;-webkit-line-clamp:2}
+.style-options-grid .style-card-samples{display:flex;flex-direction:row;align-items:center;justify-content:space-between;align-self:stretch;gap:3px;margin:2px 0 0!important;transform:none!important}
+
+/* Rarity has both a written label and a distinct paper tint. */
+.atlas-item{--rarity-paper:#f3f6ea;--rarity-glow:#dfe9cd;--rarity-line:#cbd9b9;--rarity-ink:#587247;background:radial-gradient(ellipse at 50% 32%,var(--rarity-glow),transparent 72%),var(--rarity-paper)!important;border:1px solid var(--rarity-line)!important;padding-top:34px!important}
+.atlas-item[data-rarity="2"]{--rarity-paper:#edf5f4;--rarity-glow:#d0e6e0;--rarity-line:#adcdc1;--rarity-ink:#45776d}
+.atlas-item[data-rarity="3"]{--rarity-paper:#f2edf7;--rarity-glow:#dfd1ee;--rarity-line:#c6b0d8;--rarity-ink:#826198}
+.atlas-item[data-rarity="4"]{--rarity-paper:#fcf4df;--rarity-glow:#f3dda4;--rarity-line:#d9ba73;--rarity-ink:#94702d}
+.atlas-item[data-rarity="3"]::before,.atlas-item[data-rarity="4"]::before{content:'✧';position:absolute;right:12px;top:28px;font-size:27px;color:var(--rarity-line);opacity:.8;pointer-events:none}
+.atlas-item.selected{outline:2px solid var(--rarity-ink);outline-offset:-2px;box-shadow:0 3px 14px #596f3512!important}
+.rarity-badge{position:absolute;left:10px;top:10px;font-size:10px;line-height:1.6;font-weight:600;color:var(--rarity-ink);letter-spacing:.08em}
+.rarity-badge::before{content:'• ';font-size:12px}
+.rarity-3::before,.rarity-4::before{content:'◆ ';font-size:9px}
+.atlas-item.locked{background:linear-gradient(#fff8,#fff8),var(--rarity-paper)!important;border-style:dashed!important}
+.atlas-item .node-usage{font-size:10px;color:var(--rarity-ink);line-height:1.5;margin-top:5px}
+.node-replace-actions{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 15px;padding-bottom:10px;border-bottom:1px solid #e4e8d7}
+.node-replace-actions button{font-size:12px!important;color:#487044!important}
+#assign-domain,#assign-scope{display:block;width:100%;min-height:38px;margin:9px 0;padding:8px 10px;color:#42653e;background:#fcfcf5;border:1px solid #dce3ce;border-radius:10px;font:inherit;font-size:12px}
+body.is-collection-panel.is-narrow #open-atlas{display:inline-flex;font-size:0}
+body.is-collection-panel.is-narrow #open-atlas::after{content:'图鉴';font-size:12px}
+body.is-collection-panel.is-narrow #open-atlas .acorn-entry,body.is-collection-panel.is-narrow #atlas-count{display:none}
+body.is-collection-panel.is-narrow[data-screen=atlas] #reader{display:none}
+body.is-collection-panel.is-narrow[data-screen=atlas].atlas-detail-open #reader{display:block;position:fixed;inset:auto 8px 8px;z-index:50;max-height:52dvh!important;overflow:auto;overscroll-behavior:contain;background:#fffef9;border:1px solid #e6e2d6;border-radius:18px;padding:18px 18px 22px;box-shadow:0 -6px 28px #3c422316;outline:none}
+body.is-collection-panel.is-narrow[data-screen=atlas].atlas-detail-open .frame-reader-close{display:block;position:sticky;float:right;top:0;z-index:2;background:#f5f4ed;color:#717862;border:1px solid #e5e3d8;border-radius:999px;padding:5px 12px;font:inherit;font-size:12px;cursor:pointer}
+@media(prefers-reduced-motion:no-preference){.domain-caption{transition:opacity .15s}.garden-node .name{transition:opacity .15s}}

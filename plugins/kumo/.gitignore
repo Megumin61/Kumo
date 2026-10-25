@@ -1,0 +1,10 @@
+node_modules/
+**/node_modules/
+local-config.json
+**/local-config.json
+.env
+.env.*
+.kumo/
+knowledge/
+*.log
+__pycache__/

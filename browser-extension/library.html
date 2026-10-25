@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kumo · 我的收藏</title><link rel="stylesheet" href="common.css"><link rel="stylesheet" href="library.css"><link rel="stylesheet" href="library-refinements.css"><link rel="stylesheet" href="logo.css"><link rel="stylesheet" href="forest-journal.css"></head>
+<body><main>
+  <header id="brand-header" hidden><div class="brand"><span class="logo-crop" data-original="false"><img src="assets/brand/primary.png" alt="Kumo 标识"></span>Kumo</div><button id="settings" class="icon-button" aria-label="管理标签"></button></header>
+  <div class="page-heading"><span class="brand"><span class="logo-crop" data-original="false"><img src="assets/brand/primary.png" alt="Kumo 标识"></span></span><button id="list-back" class="quiet">返回</button><h1 id="view-title">我的收藏</h1><button id="collections-toggle" class="quiet">我的合集</button></div>
+  <div class="row library-links"><a class="quiet" href="garden/index.html?panel=1">知识地图 ↗</a><button id="retry-library" class="quiet" type="button">刷新连接</button></div>
+  <div id="collection-filters" class="filters"></div>
+  <div id="library-status" class="status" role="status"></div>
+  <p id="connection-help" class="muted" hidden>收藏列表需要本地助手连接资料库。保存在文件夹中的内容仍在。<a href="help.html" target="_blank" rel="noopener">查看连接说明</a></p>
+  <div class="tools" hidden><input id="search" aria-label="搜索收藏" placeholder="搜索收藏"><select id="domain-filter"><option value="">全部领域</option></select><button id="organize">复制整理指令</button><button id="refresh">刷新</button></div>
+  <form id="collection-form" hidden><input id="collection-name" maxlength="40" aria-label="新合集名称" placeholder="合集名称" required><button class="chip" type="submit">创建</button></form>
+  <div id="folders" hidden></div><div id="items"></div><button id="more" class="chip" hidden>加载更多</button>
+  <dialog id="settings-dialog"><div class="row"><h2>管理标签</h2><button id="settings-close" class="icon-button" aria-label="关闭设置"></button></div><div id="manage-tags"></div></dialog>
+  <section id="detail" hidden tabindex="-1" aria-label="收藏详情">
+    <div class="close-row"><button id="back" class="quiet">返回收藏</button></div>
+    <h1 id="detail-title"></h1><div id="detail-meta" class="card-meta"></div><div id="detail-tags" class="detail-collections"></div>
+    <section id="compiled-summary" aria-label="AI 内容概括"></section>
+    <div id="assets"></div><div id="media-caption" class="muted"></div>
+    <section><div class="row"><h2>我的笔记</h2><button id="edit-note" class="quiet">追加笔记</button></div><pre id="note-history" class="note"></pre><form id="note-editor" class="editor" hidden><textarea id="new-note" aria-label="追加笔记"></textarea><button class="chip" type="submit">保存笔记</button></form></section>
+    <section class="membership"><button id="change-collection" class="quiet" aria-expanded="false">更改合集</button><div id="collection-control" hidden></div></section>
+    <nav id="detail-tabs" class="filters" aria-label="内容视图"><button class="chip" data-view="body" aria-pressed="true">正文</button><button class="chip" data-view="comments" aria-pressed="false">评论</button></nav>
+    <section id="article-body"><div id="source"></div></section>
+    <section id="comments-view" hidden><div id="comments-list"></div></section>
+    <div id="detail-status" class="status" role="status"></div><p><a id="original" class="primary" target="_blank" rel="noopener noreferrer">链接来源</a></p>
+  </section>
+</main><script src="bridge.js"></script><script src="ui.js"></script><script src="library.js"></script><script type="module" src="brand-sync.mjs"></script></body></html>
+

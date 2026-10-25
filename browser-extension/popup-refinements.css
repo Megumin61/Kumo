@@ -1,0 +1,75 @@
+/* Keep the new-label action visible even when the collection strip is full. */
+body{width:410px;height:590px}
+main{gap:7px;padding:14px 18px}
+.note-wrap{flex:1 0 82px;min-height:82px}
+#note{resize:none;overflow-y:auto;padding:10px 12px 18px}
+header .custom-select{width:108px}
+header .select-trigger{border:1px solid #dcd7cd;background:#f9f7f2;border-radius:8px;padding:5px 9px;font-size:12px;min-height:30px}
+header .select-trigger{white-space:nowrap;gap:5px;font-size:11px}
+header .select-trigger .icon{width:14px;height:14px}
+#status{max-height:64px;overflow-y:auto;overflow-wrap:anywhere}
+#destination-open{white-space:nowrap;font-size:12px;padding:5px 10px}
+@media(max-height:540px){body{height:510px}main{gap:5px}.note-wrap{flex-basis:72px;min-height:72px}}
+.tag-row{overflow:visible;min-width:0;align-items:flex-start}
+main{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+main>section[aria-label="用户标签"]{flex:none}
+#tag-list.expanded{max-height:none;overflow:visible}
+#tag-list{display:flex;flex-wrap:wrap;align-content:start;flex:1;min-width:0;max-height:66px;overflow:hidden;gap:6px;padding:0 0 4px}
+#tag-list .chip{flex:none}
+#add-tag,#tag-form{flex:none;align-self:flex-start}
+.tag-with-delete{position:relative;display:inline-flex;flex:none}
+.tag-delete{position:absolute;right:0;top:0;display:flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:1px solid #d7d3c8;border-radius:50%;background:#fbfaf7;color:#726b61;font:14px/1 sans-serif;opacity:0;pointer-events:none}
+.tag-with-delete:hover .tag-delete,.tag-with-delete:focus-within .tag-delete{opacity:1;pointer-events:auto}
+@media(hover:none){.tag-delete{opacity:1;pointer-events:auto}}
+.chip:not([aria-pressed="true"]){background:#f5f2ec;color:#30343a;border-color:#dcd7cd}
+.chip.dashed{background:transparent}
+#all-tags{font-size:10px;white-space:nowrap;padding:3px 9px;color:#586c3c;margin-left:8px;border:1px solid #b8c69b;border-radius:20px;background:#e9eedb;font-weight:650;min-height:25px}
+.tag-row .chip{display:inline-flex;align-items:center;gap:5px}
+.tag-label{overflow:hidden;text-overflow:ellipsis}
+.tag-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;padding:0 4px;border-radius:9px;background:#858f6c17;font-size:10px;line-height:17px;flex:none}
+.chip[aria-pressed=true] .tag-count{background:#ffffff25;color:white}
+.label-row .note-label{margin-right:auto}
+.label-row .note-label{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+@media(max-height:540px){.tag-row>#tag-list:not(.expanded){max-height:32px}}
+.media-kind{position:absolute;right:18px;top:94px;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:#30342bc9;color:white;font-size:9px;pointer-events:none}
+@media(max-height:540px){.media-kind{top:87px}}
+body:has(#progress-panel:not([hidden])) main{gap:5px}
+body:has(#progress-panel:not([hidden])) #page-card{min-height:90px;padding:10px 12px}
+body:has(#progress-panel:not([hidden])) .source-line{margin-bottom:6px}
+body:has(#progress-panel:not([hidden])) .page-thumbnail{width:56px;height:56px}
+body:has(#progress-panel:not([hidden])) .media-kind{top:75px}
+@media(max-height:540px){body:has(#progress-panel:not([hidden])) main{gap:3px}}
+.settings-entry{display:grid;grid-template-columns:18px 1fr 14px;gap:3px 8px;align-items:center;flex:none;width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left;font-size:12px}
+.settings-entry>.icon{width:18px;height:18px;aspect-ratio:1;flex:none}
+.settings-entry>.icon:last-child{width:14px;height:14px;grid-column:3}
+#video-focus{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;min-height:32px}
+#video-focus .target-label{margin:0;font-size:12px;color:var(--muted)}
+#video-focus .custom-select{width:180px}
+#video-focus .select-trigger{font-size:11px;padding:5px 8px}
+#save-options{position:fixed;inset:0;z-index:50;overflow-y:auto;padding:0 18px 18px;background:var(--paper)}
+.settings-heading{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;background:var(--paper);padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+.settings-heading h2,#save-options>h2{font-size:16px;margin:0}
+#save-options .path-card{padding:13px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:18px}
+.path-card .note-label{margin-bottom:10px}
+.path-card .custom-select{width:100%}
+#save-options .target-path{font-size:12px;line-height:1.65;margin:12px 0}
+#save-options .muted{line-height:1.6;font-size:11px}
+#save-options .check,#save-options .option-row{display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px;line-height:1.5}
+#save-options .option-row{justify-content:space-between}
+#save-options .option-row .custom-select{width:175px}
+body:has(#video-focus:not([hidden])) main{gap:5px}
+@media(max-height:540px){body:has(#video-focus:not([hidden])) main{gap:3px}}
+/* Reuse the preview slot for progress; the note editor never collapses. */
+main{position:relative}
+body:has(#progress-panel:not([hidden])) #page-card{visibility:hidden}
+#progress-panel{position:absolute;left:18px;right:18px;top:51px;min-height:76px;z-index:2}
+@media(max-height:540px){
+ main{gap:4px}
+ #page-card{padding:10px 12px;min-height:90px}
+ .source-line{margin-bottom:6px}
+ #title{font-size:17px;line-height:1.3;margin-bottom:5px}
+ .page-thumbnail{width:56px;height:56px}
+ #preview{font-size:10px;line-height:1.35}
+ body:has(#video-focus:not([hidden])) main{gap:3px}
+ #progress-panel{top:45px}
+}

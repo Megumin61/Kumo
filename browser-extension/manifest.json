@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "Kumo 网页剪藏",
+  "version": "0.18.0",
+  "description": "收藏网页、阅读笔记，并用森系知识花园探索本地资料。知识地图与收藏列表需连接 Kumo 本地资料库。",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads",
+    "sidePanel"
+  ],
+  "side_panel": {
+    "default_path": "library.html"
+  },
+  "host_permissions": [
+    "http://127.0.0.1:43789/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "assets/brand/primary.png",
+    "32": "assets/brand/primary.png",
+    "48": "assets/brand/primary.png",
+    "128": "assets/brand/primary.png"
+  },
+  "commands": {
+    "kumo-open": {
+      "suggested_key": {
+        "default": "Alt+Shift+K"
+      },
+      "description": "打开 Kumo 剪藏"
+    },
+    "kumo-save": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "一键剪藏当前网页（首次授权需确认）"
+    }
+  },
+  "action": {
+    "default_title": "保存到 Kumo",
+    "default_icon": {
+      "16": "assets/brand/primary.png",
+      "32": "assets/brand/primary.png",
+      "48": "assets/brand/primary.png",
+      "128": "assets/brand/primary.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "version_name": "0.18.0 RC1 · 首次保存与连接"
+}

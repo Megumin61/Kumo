@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import os from 'node:os';
+import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
+import {createEvidenceLibrary} from '../library.mjs';
+import {createLibrary} from '../../../../../local-bridge/library.mjs';
+import {sourceSnapshot} from '../snapshot.mjs';
+test('atlas retains domains, counts unique sources, requires evidence; content keywords stay independent and expire',async testContext=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'kumo-atlas-'));testContext.after(async()=>{sourceSnapshot(root).close();await rm(root,{recursive:true,force:true,maxRetries:5});});
+ for(const name of ['inbox/one','inbox/two','archive','domains'])await mkdir(path.join(root,name),{recursive:true});
+ for(const name of ['one','two']){await writeFile(path.join(root,'inbox',name,'source.md'),'## 正文\n导航反馈需要清楚。');await writeFile(path.join(root,'inbox',name,'metadata.json'),JSON.stringify({title:name,files:{},userTags:[{id:'manual',label:'产品思考'}]}));}
+ const library=await createEvidenceLibrary(root,{allowOrganize:true}),queue=await library.compilationQueue(),[first,second]=queue.items;
+ const domain=id=>({id,name:id,scope:'导航',summary:'导航知识',triggers:[],avoidWhen:[]});
+ const cards=queue.items.map((row,index)=>({id:row.id,fingerprint:row.fingerprint,keywords:index?undefined:['渐进披露','状态反馈'],summary:'导航结构',domainIds:[index?'other':'design'],topicIds:index?[]:['navigation'],reuseWhen:[],avoidWhen:[],limitations:[],inspectedImages:[],evidence:[{view:'body',quote:'导航反馈需要清楚。'}]}));
+ const input={domains:[domain('design'),domain('other')],topics:[{...domain('navigation'),domainId:'design'}],cards,relations:[]};await library.saveWiki((await library.previewWiki(input)).planId);
+ assert.equal((await library.knowledgeAtlas()).nodes.length,2);assert.equal((await library.knowledgeAtlas()).edges.length,0);
+ const relation={from:first.id,to:second.id,type:'complements',reason:'导航与反馈互补',fromQuote:'导航反馈需要清楚。',toQuote:'导航反馈需要清楚。'};
+ await library.saveWiki((await library.previewWiki({...input,domains:[],topics:[],cards:[],relations:[relation]})).planId);
+ assert.equal((await library.knowledgeAtlas()).edges.length,1);assert.equal((await library.knowledgeFocus({kind:'domain',id:'design',childLimit:3,sources:true})).sources[0].keywords[0],'渐进披露');
+ const hit=(await library.search('渐进披露')).results.find(row=>row.id===first.id);assert.ok(hit.matchReasons.includes('内容关键词'));
+ const browser=createLibrary(root),result=await browser.list({q:'渐进披露'});assert.equal(result.total,1);assert.equal(result.items[0].userTags[0].label,'产品思考');assert.deepEqual(result.items[0].contentKeywords,['渐进披露','状态反馈']);assert.deepEqual((await browser.detail(first.id)).contentKeywords,result.items[0].contentKeywords);
+ assert.equal(result.items[0].contentSummary,'导航结构');assert.equal((await browser.detail(first.id)).contentSummary,'导航结构');assert.equal((await library.list()).items.find(row=>row.id===first.id).summary,'导航结构');
+ const overview=await browser.tagOverview();assert.equal(overview.tags.find(tag=>tag.id==='manual').count,2);assert.equal(overview.unclassifiedCount,0);
+ assert.equal((await library.knowledgeFocus({kind:'domain',id:'design'})).references[0].summary,'导航结构');
+ await assert.rejects(library.previewWiki({...input,domains:[],topics:[],cards:[{...cards[0],keywords:['重复','重复']}],relations:[]}),/关键词/);
+ const metadata=await readFile(path.join(root,first.relativePath||'inbox/one','metadata.json'),'utf8').catch(()=>null);
+ const row=(await browser.list()).items.find(item=>item.id===first.id);await writeFile(path.join(root,row.relativePath,'source.md'),'## 正文\n来源变化');sourceSnapshot(root).invalidate();
+ assert.deepEqual((await browser.detail(first.id)).contentKeywords,[]);assert.equal((await library.knowledgeAtlas()).edges.length,0);assert.equal((await library.search('渐进披露')).results.length,0);assert.ok(metadata===null||metadata.includes('产品思考'));
+ assert.equal((await browser.detail(first.id)).contentSummary,'');assert.equal((await library.list()).items.find(row=>row.id===first.id).summary,'');
+});

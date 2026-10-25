@@ -1,0 +1,20 @@
+{
+  "name": "kumo",
+  "interface": {
+    "displayName": "Kumo"
+  },
+  "plugins": [
+    {
+      "name": "kumo",
+      "source": {
+        "source": "local",
+        "path": "./plugins/kumo"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

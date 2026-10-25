@@ -1,0 +1,4 @@
+export function summaryParagraphs(value){return String(value||'').split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);}
+export function summaryParts(value){const paragraphs=summaryParagraphs(value),first=paragraphs[0]||'',sentence=first.match(/^.*?[。！？][”’」』]?|^.*?[.!?](?=\s|$)/s)?.[0]||first,length=Math.min(120,sentence.length),lead=first.slice(0,length),rest=[first.slice(length).trim(),...paragraphs.slice(1)].filter(Boolean);return {lead:lead+(sentence.length>120?'…':''),rest};}
+export function summaryLead(value){return summaryParts(value).lead;}
+export function appendSummaryRemainder(parent,value){const paragraphs=summaryParts(value).rest;if(!paragraphs.length)return 0;const container=document.createElement('div');container.className='readable-summary';for(const text of paragraphs){const p=document.createElement('p');p.textContent=text;container.append(p);}parent.append(container);return paragraphs.length;}

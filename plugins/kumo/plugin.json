@@ -1,0 +1,52 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "kumo",
+  "version": "0.13.4",
+  "description": "Organize local Kumo web clips into traceable domain knowledge and reuse them in real tasks.",
+  "author": {
+    "name": "Jayce"
+  },
+  "repository": "https://github.com/Megumin61/jayceCodex",
+  "keywords": [
+    "knowledge",
+    "research",
+    "web-clipper",
+    "local-first"
+  ],
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/setup/SKILL.md",
+      "interface": {
+        "displayName": "Kumo",
+        "shortDescription": "Find and organize web clips",
+        "longDescription": "Kumo helps you retrieve saved web clips and build evidence-backed domain knowledge. It reads a user-authorized local Kumo library, preserves original sources and manual classifications, and supports derived organization only when separately enabled and requested. Requires a local desktop executor and Node.js 22+. This package does not make a local library available to the ChatGPT website or host a cloud AI service. The interface and skills support Chinese workflows.",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": [
+          "帮我找收藏里适合当前任务的参考，并读取原文。",
+          "整理我的 Kumo 新收藏，编译领域知识并更新关联，保留原件和人工分类。",
+          "检查 Kumo 连接，说明当前资料库和可用的读写权限。"
+        ],
+        "brandColor": "#718054",
+        "logo": "./assets/primary.png",
+        "composerIcon": "./assets/primary.png",
+        "logoDark": "./assets/light.png",
+        "composerIconDark": "./assets/light.png"
+      },
+      "requires_local_executor": true,
+      "review": {
+        "prompts": [
+          "帮我找收藏里适合当前任务的参考，并读取原文。",
+          "整理我的 Kumo 新收藏，编译领域知识并更新关联，保留原件和人工分类。",
+          "检查 Kumo 连接，说明当前资料库和可用的读写权限。"
+        ]
+      },
+      "publication": {
+        "release_notes": "Portable local package with bundled runtime dependencies, two product logos, clearer setup guidance, and submission preparation. Runtime core remains 0.13.3."
+      }
+    }
+  }
+}
