@@ -1,129 +1,81 @@
-<p align="center"><img src="plugins/kumo/assets/primary.png" alt="Kumo" width="120"></p>
-<h1 align="center">Kumo</h1>
-<p align="center"><strong>Clip Everything</strong><br>把值得留下的内容，变成以后用得上的知识。</p>
-<p align="center"><a href="https://kumo-clip-jayce.ximisapa.chatgpt.site/">产品介绍</a> · <a href="docs/INSTALL.md">安装指南</a> · <a href="docs/DEVELOPMENT.md">开发指南</a> · <a href="https://github.com/Megumin61/Kumo/releases">下载</a></p>
+<p align="center"><img src="docs/assets/logo.png" width="96" alt="Kumo 标识"></p>
+<h1 align="center">Kumo · Clip Everything</h1>
+<p align="center"><strong>让收藏，长成自己的知识花园。</strong><br>留下网页与想法，在下一次需要时，找回、理解，再用上。</p>
+<p align="center"><a href="https://megumin61.github.io/Kumo/">产品官网</a> · <a href="https://www.xiaohongshu.com/user/profile/5f92e666000000000100aca2">小红书</a> · <a href="https://github.com/Megumin61/Kumo/releases">下载</a> · <a href="docs/INSTALL.md">安装指南</a></p>
 
-Kumo 是一款以本地文件夹为资料库的网页剪藏工具。浏览器负责保存来源和笔记，知识花园帮助探索收藏，AI 插件负责检索、精读与经授权的整理。
+Kumo 是一款以本地文件夹为资料库的网页剪藏工具。浏览器扩展保存来源和笔记；收藏聚落与知识花园帮助探索内容；单独连接的 AI 插件负责检索、精读和经授权的整理。
 
-## 可以做什么
+## 看看它如何生长
 
-- **保存网页**：留下标题、链接、作者、正文、图片和自己的笔记；采集结果受页面公开程度与平台结构影响。
-- **收藏项目与视频线索**：GitHub 项目保存简介、可读取的 README 和来源；B 站保存标题、作者、封面、简介与视频链接，不要求下载整个视频。
-- **探索知识花园**：通过领域、主题和帖子查看自己的内容，使用不同植物节点与两套品牌外观。
-- **让 AI 用上收藏**：在支持本地执行的 ChatGPT Work / Codex 客户端中，查找依据、读取原文、整理分类并编译主题知识。
+[![Kumo 一分钟产品演示：网页剪藏、知识花园与 AI 检索](docs/assets/kumo-cover.jpg)](docs/media/kumo-product-demo.mp4)
 
-## 让花园动起来
+[播放 60 秒新版演示](docs/media/kumo-product-demo.mp4) · [在线演示与功能介绍](https://megumin61.github.io/Kumo/#demo) · [下载仓库后离线播放](docs/media/index.html)
 
-**11 种画风，自由切换。** 水彩、套色、彩铅、蜡笔、印章、露营贴纸……同一份知识，也可以有不同的样子。
+视频与画风动图由 Jayce 提供，官网与仓库使用同一套素材。视频介绍产品流程；AI 界面的演示不代表仅安装浏览器扩展即可自动连接所有 AI 工具。
 
-![Kumo 十一种画风真实切换演示](docs/media/kumo-style-switching.gif)
+## 为什么做 Kumo
 
-[观看约 35 秒完整短片](docs/media/kumo-product-demo.mp4) · [风格切换高清版](docs/media/kumo-style-switching.mp4) · [下载循环动图](docs/media/kumo-style-switching.gif)
+很多好内容停在了「我好像存过」。一条链接容易找不回来，一张截图也不一定留下上下文。Kumo 希望先保留可读取的内容、来源和自己的想法，再让相关材料长出主题与领域，成为之后做设计、学习和项目时能用上的参考。
 
-完整短片同时展示浏览器剪藏面板、收藏列表、合集和花园交互。风格与交互为真实界面采样，花园使用合成演示数据，停留时间经过剪辑。
+花园是一种浏览和组织知识的表达。这里的“养成 AI”指积累可供 AI 参考的资料，**不是训练模型**。
 
-## 看看 Kumo
+## 核心功能
 
-下面是当前产品界面的实机截图，使用合成演示数据：39 篇收藏、6 个领域、18 个主题。截图不包含真实用户收藏；它们展示界面，并不表示这些材料已由 AI 实际编译。
-
-### 收藏聚落 · 看见内容之间的分布
-
-领域各自长成一片花圃，主题和收藏沿枝叶分布；待编译材料单独收纳。点进领域，再查看属于它的内容。
-
-![Kumo 收藏聚落：领域花圃、藤蔓和独立待编译区](docs/screenshots/01-collection-colony.jpg)
-
-### 知识花园 · 沿着一条线索深入
-
-从领域展开到主题，再进入具体收藏。当前分支更清晰，右侧同时呈现概括、数量和相关内容。
-
-![Kumo 分层探索与节点图鉴交互演示](docs/media/kumo-explore.gif)
-
-[查看静态截图](docs/screenshots/02-knowledge-garden.jpg) · [交互高清短片](docs/media/kumo-explore.mp4)
-
-### 节点图鉴 · 给知识选择自己的样子
-
-查看已收集与待解锁的节点，切换画风，把喜欢的植物图案应用到领域及其分支。
-
-![Kumo 节点图鉴：植物卡片、节点详情和家族形态](docs/screenshots/03-node-atlas.jpg)
-
-## 功能与使用条件
-
-| 你想做什么 | Kumo 提供什么 | 需要什么 |
+| 部分 | 能做什么 | 使用条件 |
 | --- | --- | --- |
-| 留下一篇网页 | 标题、来源链接、正文、图片与笔记；受页面可读取内容限制 | 浏览器扩展 |
-| 保存项目或视频线索 | GitHub 项目简介与可读 README，B 站视频元信息、简介和链接 | 浏览器扩展；不要求下载完整视频 |
-| 找回收藏 | 列表、搜索、合集与笔记 | 本地助手，连接同一资料目录 |
-| 探索知识 | 领域、主题、帖子与知识花园 | 本地助手；编译内容由已连接的 AI 提供 |
-| 让 AI 参考收藏 | 检索相关材料、读取原文、说明依据 | 支持本地执行的 ChatGPT Work / Codex 与 Kumo 插件 |
-| 整理与编译 | 分类、预览、经授权保存派生知识与关联 | 明确授权写入；保留原件和人工分类 |
+| 浏览器剪藏 | 保存标题、作者、来源、可读取正文、主要图片和笔记；Windows 默认 Ctrl+Q | 安装浏览器扩展，选择保存位置；实际键位可在保存设置中调整 |
+| 收藏列表与合集 | 查找收藏、查看原文和媒体、管理标签与笔记 | 本地助手连接同一资料库 |
+| 收藏聚落 | 从领域圈层看主题与收藏分布，待编译材料独立收纳 | 本地助手；主题知识需要 AI 整理 |
+| 知识花园 | 领域 → 主题 → 帖子逐层探索，回到原始材料 | 本地助手与资料库中的编译内容 |
+| 节点图鉴与外观 | 植物节点、双款标识、11 套画风切换 | 知识视图中的「外观」与图鉴 |
+| AI 检索与整理 | 按任务查找、读取原文、说明依据；预览并经授权保存派生知识 | 兼容本地插件的桌面客户端，单独安装、连接与授权 |
 
-更多例子、内容边界与完整流程见 [功能介绍](docs/FEATURES.md)。
+### 同一片花园，不同的样子
 
-## 快速开始
+![Kumo 节点画风切换动图](docs/media/kumo-style-switching.gif)
 
-### 只使用浏览器剪藏
+纸光、套色、彩铅、蜡笔、印章等共 11 套画风。动图展示部分切换效果，全部样式在产品「外观」中选择。
 
-1. 从 [Releases](https://github.com/Megumin61/Kumo/releases) 下载浏览器包，解压后保留该文件夹。
-2. 在 Edge 打开 `edge://extensions`（Chrome 为 `chrome://extensions`），开启开发人员模式，选择“加载解压缩的扩展”。
-3. 选择包含 `manifest.json` 的文件夹；如果下载了完整仓库，选择 `browser-extension/`。
-4. 打开要保存的网页，点击 Kumo，选择保存目录并完成第一次剪藏。
+### 把收藏重新连回内容
 
-基础剪藏无需 Node.js，也不需要 OpenAI API Key。
+![Kumo 收藏聚落：领域圈层、藤蔓与主题分布](docs/assets/colony.jpg)
 
-### 使用收藏列表与知识花园
+![Kumo 知识花园：从领域展开到主题与帖子](docs/assets/garden.jpg)
 
-先安装 Node.js 22 或更新版本，再在仓库根目录执行：
+界面图用于功能说明，节点数量与内容随资料库变化。收藏保存成功，不等于已经被 AI 编译。
 
-```sh
-npm run setup
-npm run helper -- --library "资料文件夹的完整路径"
-```
+## 从哪里开始
 
-回到扩展，选择“连接的本地资料库”。本地助手只监听 `127.0.0.1:43789`，需要保持运行；它不会代替 AI 自动编译。
+1. **先保存。** [下载浏览器包](https://github.com/Megumin61/Kumo/releases)，解压后在 Edge / Chrome 的扩展管理页加载含 `manifest.json` 的文件夹。打开网页，选择资料目录并保存。
+2. **再查看花园。** 安装本地助手，连接同一个资料目录。需要 Node.js 22+；源码安装先运行 `npm run setup`，再运行 `npm run helper -- --library "资料文件夹完整路径"`。
+3. **需要 AI 时再连接。** 在兼容本地插件的 ChatGPT Work / Codex 桌面客户端安装 Kumo，先说“检查 Kumo 连接”，确认目录与权限，再开始检索或整理。
 
-### 安装 AI 插件
+完整步骤：[安装指南](docs/INSTALL.md)。网页端 ChatGPT 或其他 AI 软件不会仅因装了浏览器扩展就自动读取本地文件。
 
-在支持本地 marketplace 的 Codex CLI 中添加：
+## 可以这样使用
 
-```sh
-codex plugin marketplace add Megumin61/Kumo
-```
+- “找出我收藏里关于信息层级的三篇参考，读原文，说明各自适合什么场景。”
+- “对比我保存的两个 GitHub 项目，列出实现条件和还需要核实的地方。”
+- “整理新收藏，保留我的标签和原件，先给我看分类与主题计划。”
 
-随后在支持本地插件的桌面客户端打开插件目录，选择 Kumo 来源并安装；新建对话，说“检查 Kumo 连接”，授权连接同一个资料文件夹。也可使用完整仓库中的本地 marketplace。详见 [安装指南](docs/INSTALL.md)。
+更多例子与边界见 [功能介绍](docs/FEATURES.md)。任务相关时，宿主 AI 可以决定检索收藏；Kumo 不保证每次提问都自动召回，也不在没有任务时自行发送通知。
 
-只解压插件文件不会自动完成宿主安装。当前本地 MCP 需要桌面本地执行，不能通过把本地地址填进 ChatGPT 网页来连接。
+## 采集与资料处理
 
-## 让收藏参与工作
+可保存网页的可读取内容，以及 GitHub 可访问的项目说明、B 站标题／作者／封面／简介与链接。结果受网站结构、登录状态、权限和媒体可用性影响，不宣称覆盖所有平台的完整内容或任意收藏夹批量导出；视频链接不等于已理解整段视频。
 
-> 找出我收藏中适合当前界面设计的三篇参考，读取原文，并说明可以怎样用。
+收藏以本地文件保存。AI 实际读取并返回的资料会进入当前宿主上下文，遵循其数据政策；本地保存不等于离线推理。默认只读，整理和派生写入需授权；原件与人工标签保留。
 
-> 整理新收藏，保留人工标签与原件，先给出分类和编译预览。
+## 发布状态 · 2026-10-26
 
-> 对比我保存的两个 GitHub 项目，找出实现这个功能的条件和证据缺口。
+- 浏览器本地版：**0.18.1**；本地助手：**0.17.1**；AI 本地插件包：**0.13.4**（核心 **0.13.3**）。
+- Edge：已提交 0.18.0，后台核验为 **In review**；本次准备以 0.18.1 更新审核。尚无正式商店安装链接。
+- AI 插件：提供本地安装；尚未在 OpenAI 公共目录上架，不将源码或本地包称为市场认证。
 
-默认只读。整理和派生写入需要明确授权。实际读给 AI 的内容会进入当前模型上下文；本地保存不等于离线推理。
+[发布状态](docs/PUBLISHING.md) · [更新记录](CHANGELOG.md) · [源码结构与开发](docs/DEVELOPMENT.md)
 
-## 项目结构
+## 许可与联系
 
-```text
-browser-extension/   浏览器扩展与花园界面
-local-bridge/        本地资料库助手
-plugins/kumo/        ChatGPT Work / Codex 插件、运行包与 MCP 源码
-.agents/plugins/     本地 / GitHub marketplace 索引
-docs/                安装、开发、隐私与发布说明
-scripts/             检查与打包工具
-```
+保留 [PolyForm Noncommercial 1.0.0 许可](LICENSE) 与依赖的第三方许可。源码可见不等于可以不受限制地商用；品牌图也不代表已完成商标或版权清权。
 
-## 当前版本
-
-浏览器扩展 **0.18.1**，本地助手 **0.17.1**，AI 插件包 **0.13.4**（核心 **0.13.3**）。0.18.1 增加 Windows Ctrl+Q 快捷剪藏、保存设置中的快捷键入口，以及小红书完整原文链接恢复。已有安装可能沿用旧键位，以设置内显示为准。
-
-截至 2026-10-24，Edge 0.18.0 版本已提交审核；OpenAI 公开目录尚未提交。本仓库提供源码和本地安装，不代表已经通过任何商店审核。
-
-详见 [更新记录](CHANGELOG.md)、[隐私说明](docs/PRIVACY.md) 与 [发布状态](docs/PUBLISHING.md)。
-
-## 许可与支持
-
-保留现有 [PolyForm Noncommercial 1.0.0 许可](LICENSE) 和各依赖的第三方许可。源码可见不等于没有使用限制；品牌图片也不代表已完成商标或版权清权。
-
-问题反馈：[GitHub Issues](https://github.com/Megumin61/Kumo/issues) · 支持邮箱：ximisapa61@gmail.com。报告问题时请勿附带账号凭证或完整个人资料库。
+[GitHub Issues](https://github.com/Megumin61/Kumo/issues) · [小红书主页](https://www.xiaohongshu.com/user/profile/5f92e666000000000100aca2) · [隐私政策](https://kumo-clip-jayce.ximisapa.chatgpt.site/privacy) · 支持邮箱：ximisapa61@gmail.com。

@@ -1,4 +1,4 @@
-# Kumo 浏览器扩展 0.18.0
+# Kumo 浏览器扩展 0.18.1
 
 把用户主动选择的网页、来源、图片和笔记保存到本地目录。当前界面以简体中文为主，支持 Chromium / Microsoft Edge。
 
@@ -8,11 +8,13 @@
 2. 选择“加载解压缩的扩展”，选择本目录（含 manifest.json）。
 3. 打开公开文章，点击 Kumo，选择资料文件夹并保存。也可以在“保存位置”选择浏览器下载目录。
 
+Windows 默认 Ctrl+Q 快速剪藏；实际键位可在“保存设置 → 快捷剪藏 → 修改快捷键”中查看与调整。首次保存需授权资料目录。
+
 收藏列表、知识花园和编译摘要需要另外安装本地助手并连接同一资料库。浏览器扩展不扫描 AI 软件安装目录，也不自带云端 AI 编译服务。
 
 ## 发布状态
 
-0.18.0 已于 2026-10-24 提交 Microsoft Edge 审核，尚未声称正式上架。本源码去掉了早期花园预设的个人收藏概括；未改变用户资料库，也未替换审核中的安装包。
+0.18.1 包含快捷剪藏设置与原文链接修复。商店审核与本地分发分别进行，最新状态见[发布说明](https://github.com/Megumin61/Kumo/blob/main/docs/PUBLISHING.md)。
 
 - [产品介绍](https://kumo-clip-jayce.ximisapa.chatgpt.site/)
 - [隐私政策](https://kumo-clip-jayce.ximisapa.chatgpt.site/privacy)
