@@ -182,6 +182,12 @@
     }
     if (existing) {
       const previous = existing.metadata || {};
+      const merged=KumoSourceLinks.preserveAccess(clip,previous);
+      const newAccess=KumoSourceLinks.hasAccessUrl(clip)&&KumoSourceLinks.sourceUrl(clip)!==KumoSourceLinks.sourceUrl(previous);
+      if(newAccess)await writeFile(await (await library.getDirectoryHandle(existing.area)).getDirectoryHandle(existing.folderName),'metadata.json',JSON.stringify({...previous,accessUrl:KumoSourceLinks.sourceUrl(clip)},null,2),'application/json');
+      if(merged.accessUrl&&incomingFile){const metadata=JSON.parse(typeof incomingFile.content==='string'?incomingFile.content:await incomingFile.content.text());incomingFile.content=JSON.stringify({...metadata,accessUrl:merged.accessUrl},null,2);}
+      for(const file of files)if(['source.md','readable.html'].includes(file.name))file.content=KumoSourceLinks.rewriteGeneratedLinks(file.name,typeof file.content==='string'?file.content:await file.content.text(),merged);
+      clip=merged;
       const incomingStats = clip.stats || {};
       const previousStats = previous.stats || {};
       const losesSavedMedia = ['downloadedImages', 'downloadedVideos'].some(key => Number(incomingStats[key] || 0) < Number(previousStats[key] || 0));
@@ -196,7 +202,7 @@
           break;
         }
       }
-      if (losesSavedMedia || (!gainsMedia && !newerExtractor)) return {duplicate: true, ...existing};
+      if (losesSavedMedia || (!gainsMedia && !newerExtractor)) return {duplicate: true, linksUpdated:newAccess, ...existing};
       const area = await library.getDirectoryHandle(existing.area);
       const directory = await area.getDirectoryHandle(existing.folderName);
       for (const file of files) await writeFile(directory, file.name, file.content, file.type);

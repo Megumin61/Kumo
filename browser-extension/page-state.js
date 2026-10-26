@@ -58,7 +58,7 @@ function readKumoPageState() {
   const videos = Object.values(streams).flatMap(items => Array.isArray(items) ? items : []).map(item => ({
     url: http(item.masterUrl || item.url), type: 'video/mp4', poster: images[0]?.url || '', width: Number(item.width || 0), height: Number(item.height || 0)
   })).filter(video => video.url).sort((a, b) => b.width * b.height - a.width * a.height).slice(0, 1);
-  return {sourceId: id, xhsNote: {title: String(note.title || ''), desc: String(note.desc || ''), expectedImages: (note.imageList || []).length, images, videos}};
+  return {sourceId: id, xhsNote: {accessToken: String(note.xsecToken || note.xsec_token || ''), title: String(note.title || ''), desc: String(note.desc || ''), expectedImages: (note.imageList || []).length, images, videos}};
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = {readKumoPageState};

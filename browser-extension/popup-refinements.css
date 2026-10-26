@@ -73,3 +73,10 @@ body:has(#progress-panel:not([hidden])) #page-card{visibility:hidden}
  body:has(#video-focus:not([hidden])) main{gap:3px}
  #progress-panel{top:45px}
 }
+
+.shortcut-card{padding:12px 14px;border:1px solid #d6ddc7;border-radius:16px;background:#f1f2e5}
+.shortcut-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.shortcut-row kbd{padding:4px 8px;border:1px solid #c9d3b9;border-radius:7px;background:#fffdf5;color:#36583d;font:600 13px system-ui}
+.shortcut-row button{margin-left:auto}.shortcut-card p{line-height:1.6;margin:8px 0}.shortcut-card small{display:block;line-height:1.5}
+
+.shortcut-card{margin-bottom:18px}

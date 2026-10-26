@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kumo 网页剪藏",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "收藏网页、阅读笔记，并用森系知识花园探索本地资料。知识地图与收藏列表需连接 Kumo 本地资料库。",
   "permissions": [
     "activeTab",
@@ -37,7 +37,10 @@
     },
     "kumo-save": {
       "suggested_key": {
-        "default": "Alt+Shift+S"
+        "default": "Ctrl+Q",
+        "mac": "Alt+Shift+S",
+        "linux": "Alt+Shift+S",
+        "chromeos": "Alt+Shift+S"
       },
       "description": "一键剪藏当前网页（首次授权需确认）"
     }
@@ -52,5 +55,5 @@
     },
     "default_popup": "popup.html"
   },
-  "version_name": "0.18.0 RC1 · 首次保存与连接"
+  "version_name": "0.18.1 · 快捷剪藏与原文链接修复"
 }

@@ -547,9 +547,14 @@ async function extractKumoPage(pageState = {}) {
   })();
   const canonicalUrl = sourceIdentity.sourceUrl || candidateUrl || location.href;
   const accessUrl = (() => {
-    if (!xhs || !sourceIdentity.sourceId || !currentUrl.searchParams.get('xsec_token')) return canonicalUrl;
+    if (!xhs || !sourceIdentity.sourceId) return canonicalUrl;
+    const currentId=currentUrl.pathname.match(/\/(?:explore|discovery\/item)\/([a-f0-9]{24})(?:\/|$)/i)?.[1];
+    const token=currentId?.toLowerCase()===sourceIdentity.sourceId.toLowerCase()?currentUrl.searchParams.get('xsec_token'):'';
+    const stateToken=pageState?.sourceId===sourceIdentity.sourceId?String(pageState?.xhsNote?.accessToken||''):'';
+    if(!token&&!stateToken)return canonicalUrl;
     const target = new URL(canonicalUrl);
-    for (const key of ['xsec_token', 'xsec_source']) if (currentUrl.searchParams.has(key)) target.searchParams.set(key, currentUrl.searchParams.get(key));
+    target.searchParams.set('xsec_token',token||stateToken);
+    if(token&&currentUrl.searchParams.has('xsec_source'))target.searchParams.set('xsec_source',currentUrl.searchParams.get('xsec_source'));
     return target.href;
   })();
   const description = clean(meta('og:description') || meta('description', 'name') || jsonLd.description).slice(0, 1200);
@@ -576,6 +581,7 @@ async function extractKumoPage(pageState = {}) {
   const warnings = [];
   const minimumExpectedLength = xhs || contentType === 'social_post' ? 50 : 300;
   if (content.length < minimumExpectedLength) warnings.push('extracted_content_is_short');
+  if (xhs && !new URL(accessUrl).searchParams.get('xsec_token')) warnings.push('xiaohongshu_access_link_missing');
   if (xhs && !xhsBodyFound) warnings.push('xiaohongshu_note_body_not_found');
   if (x && !preferredRoot) warnings.push('x_target_post_not_found');
   if (!title) warnings.push('missing_title');
@@ -585,7 +591,7 @@ async function extractKumoPage(pageState = {}) {
 
   return {
     schema: 'kumo-clip-v1',
-    extractorVersion: '0.8.1',
+    extractorVersion: '0.8.2',
     id: `${capturedAt.slice(0, 10)}-${contentHash}`,
     title: title || '未命名网页',
     author,

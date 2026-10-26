@@ -519,8 +519,8 @@ async function save() {
         setStatus(`${mediaOutcome.incomplete ? '已更新，媒体仍有缺失' : '已补全原有剪藏'}：${result.relativePath}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
         saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已补全';
       } else if (result.duplicate) {
-        setStatus(`这条内容已经存在：${result.relativePath}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
-        saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已存在';
+        setStatus(`${result.linksUpdated ? '已更新原文链接' : '这条内容已经存在'}：${result.relativePath}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
+        saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : result.linksUpdated ? '链接已更新' : '已存在';
       } else {
         setStatus(`${mediaOutcome.incomplete ? '已保存正文，媒体未完整' : '已保存到本地资料库'}：${result.relativePath}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
         saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已保存';
@@ -555,8 +555,8 @@ async function save() {
         setStatus(`${mediaOutcome.incomplete ? '已更新，媒体仍有缺失' : '已补全原有剪藏'}：${result.area}/${result.folderName}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
         saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已补全';
       } else if (result.duplicate) {
-        setStatus(`这条内容已经存在：${result.area}/${result.folderName}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
-        saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已存在';
+        setStatus(`${result.linksUpdated ? '已更新原文链接' : '这条内容已经存在'}：${result.area}/${result.folderName}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
+        saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : result.linksUpdated ? '链接已更新' : '已存在';
       } else {
         setStatus(`${mediaOutcome.incomplete ? '已保存正文，媒体未完整' : `已保存给 ${profile.label}`}：${directoryHandle.name}/${destination}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
         saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已保存';
@@ -631,7 +631,8 @@ function annotationChanged() {
 noteEl.addEventListener('input', annotationChanged);
 document.addEventListener('kumo-annotation-change', annotationChanged);
 const saveOptions=document.getElementById('save-options');
-settingsEntry.onclick=()=>{saveOptions.hidden=false;document.getElementById('settings-back').focus();};
+const refreshShortcuts=KumoShortcuts.mount();
+settingsEntry.onclick=()=>{void refreshShortcuts();saveOptions.hidden=false;document.getElementById('settings-back').focus();};
 document.getElementById('destination-open').onclick=settingsEntry.onclick;
 document.getElementById('settings-back').onclick=()=>{saveOptions.hidden=true;settingsEntry.focus();};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!saveOptions.hidden){saveOptions.hidden=true;settingsEntry.focus();}if((event.ctrlKey||event.metaKey)&&event.key==='Enter'&&!event.isComposing&&saveOptions.hidden&&!saveEl.disabled){event.preventDefault();saveEl.click();}});

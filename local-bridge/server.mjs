@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {publicGet, checkRemoteUrl} from './remote.mjs';
 import Media from '../browser-extension/media.js';
 import Format from '../browser-extension/format.js';
+import SourceLinks from '../browser-extension/source-links.js';
 import {randomUUID} from 'node:crypto';
 import {createLibrary} from './library.mjs';
 import {createEvidenceLibrary} from '../plugins/kumo/src/mcp/library.mjs';
@@ -138,6 +139,15 @@ async function saveClip(libraryRoot, payload, library) {
     const incomingFile = payload.files.find(file => file.name === 'metadata.json');
     const incoming = incomingFile?.encoding === 'utf8' ? JSON.parse(incomingFile.content) : null;
     const previousStats = {...(existing.metadata?.stats || {})};
+    let accessLinkUpdated=false;
+    if(incoming){
+      const merged=SourceLinks.preserveAccess(incoming,existing.metadata);
+      if(merged.accessUrl)incomingFile.content=JSON.stringify(merged,null,2);
+      for(const file of payload.files)if(['source.md','readable.html'].includes(file.name)&&file.encoding==='utf8')file.content=SourceLinks.rewriteGeneratedLinks(file.name,file.content,merged);
+      const newAccess=SourceLinks.hasAccessUrl(incoming)&&SourceLinks.sourceUrl(incoming)!==SourceLinks.sourceUrl(existing.metadata);
+      accessLinkUpdated=newAccess;
+      if(newAccess)await writeFile(path.join(libraryRoot,existing.area,existing.folderName,'metadata.json'),JSON.stringify({...existing.metadata,accessUrl:SourceLinks.sourceUrl(incoming)},null,2),'utf8');
+    }
     const recordedVideos = (existing.metadata?.videos || []).filter(video => video.localFile && ALLOWED_VIDEO.test(video.localFile));
     if (recordedVideos.length) {
       const sizes = await Promise.all(recordedVideos.map(async video => {
@@ -165,7 +175,7 @@ async function saveClip(libraryRoot, payload, library) {
     const settlesPending = !losesSavedMedia && existing.metadata?.warnings?.includes('media_download_pending') && !incoming?.warnings?.includes('media_download_pending');
     if (!moreComplete && !newerExtractor && !settlesPending) {
       const {metadata, ...result} = existing;
-      return {ok: true, duplicate: true, repaired: false, ...result};
+      return {ok: true, duplicate: true, repaired: false, linksUpdated:accessLinkUpdated, ...result};
     }
     const existingDirectory = path.join(libraryRoot, existing.area, existing.folderName);
     for (const file of payload.files) {
@@ -363,6 +373,7 @@ export function createKumoBridge({libraryRoot, port = DEFAULT_PORT, remoteGet = 
       if (req.method === 'GET' && req.url.startsWith('/ui/')) {
         const name = req.url.slice(4).split('?')[0];
         const allowed = {'knowledge.html':'text/html','knowledge.js':'text/javascript','knowledge-scene.js':'text/javascript','knowledge.css':'text/css','library.html':'text/html', 'library.js':'text/javascript', 'library.css':'text/css', 'library-refinements.css':'text/css', 'common.css':'text/css', 'logo.css':'text/css', 'assets/kumo-design-reference.png':'image/png', 'assets/kumo-logo-reference.png':'image/png', 'assets/kumo-logo.svg':'image/svg+xml', 'assets/icons.svg':'image/svg+xml', 'bridge.js':'text/javascript', 'ui.js':'text/javascript'};
+        allowed['source-links.js']='text/javascript';
         allowed['knowledge-focus.js']='text/javascript';
         allowed['knowledge-atlas.js']='text/javascript';allowed['knowledge-atlas.css']='text/css';
         allowed['knowledge-garden.css']='text/css';
@@ -380,7 +391,7 @@ export function createKumoBridge({libraryRoot, port = DEFAULT_PORT, remoteGet = 
       }
       if (req.method === 'GET' && req.url === '/status') {
         await ensureLibrary(resolvedRoot);
-return response(res, 200, {ok: true, service: 'kumo-local-bridge', apiVersion: API_VERSION, bridgeVersion: '0.16.2', capabilities: ['nested_assets', 'video_assets', 'platform_guides', 'repair_incomplete_clips', 'x_public_media', 'x_video_jobs', 'library_browser', 'user_annotations', 'local_library_ui','ai_classification','knowledge_map','knowledge_focus','knowledge_atlas','content_keywords','incremental_index','reversible_tag_delete','media_preparation'], activeJobs: [...jobs.values(),...mediaJobs.values()].slice(-10), libraryRoot: resolvedRoot}, origin);
+return response(res, 200, {ok: true, service: 'kumo-local-bridge', apiVersion: API_VERSION, bridgeVersion: '0.17.1', capabilities: ['nested_assets', 'video_assets', 'platform_guides', 'repair_incomplete_clips', 'x_public_media', 'x_video_jobs', 'library_browser', 'user_annotations', 'local_library_ui','ai_classification','knowledge_map','knowledge_focus','knowledge_atlas','content_keywords','incremental_index','reversible_tag_delete','media_preparation'], activeJobs: [...jobs.values(),...mediaJobs.values()].slice(-10), libraryRoot: resolvedRoot}, origin);
       }
       if(req.method==='POST'&&req.url==='/media/prepare'){
         const input=await readBody(req,4000);

@@ -113,7 +113,8 @@ async function show(id) {
     currentDetail = result; const meta = result.metadata; byId('detail-title').textContent = KumoUI.displayTitle(meta);byId('detail-title').title=meta.title||'';
     const mark=el('span','','platform-mark');KumoUI.platform(mark,meta.platform||'网页');byId('detail-meta').replaceChildren(mark,document.createTextNode([meta.author,KumoUI.relativeDate(meta.capturedAt)].filter(Boolean).join(' · ')));
     const tags = result.effectiveUserTags ?? result.events?.at(-1)?.userTags ?? meta.userTags ?? [];
-    const url = safeUrl(result.url ?? meta.url); byId('original').hidden = !url; if (url) byId('original').href = url; else byId('original').removeAttribute('href');
+    const url = safeUrl(KumoSourceLinks.sourceUrl({...meta,url:meta.url||result.url})); byId('original').hidden = !url; if (url) byId('original').href = url; else byId('original').removeAttribute('href');
+    byId('original-hint').hidden=!/xiaohongshu\.com\/(?:explore|discovery\/item)\//.test(url)||KumoSourceLinks.hasAccessUrl(meta);
     renderBody(result.source);
     const discussion=[...(Array.isArray(meta.comments)?meta.comments:[]),...(Array.isArray(meta.authorFollowups)?meta.authorFollowups:[])].filter(Boolean);
     const seen=new Set(),comments=discussion.filter(value=>{const key=[value.author||'',value.text||value.content||''].join('\n');if(seen.has(key))return false;seen.add(key);return true;});

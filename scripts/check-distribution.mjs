@@ -7,7 +7,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const files=[];
 async function walk(dir){
   for(const item of await readdir(dir,{withFileTypes:true})){
-    if(['.git','node_modules','dist','__pycache__'].includes(item.name))continue;
+    if(['.git','node_modules','dist','deliverables','__pycache__'].includes(item.name))continue;
     const full=path.join(dir,item.name);
     if(item.isDirectory())await walk(full);else files.push(full);
   }

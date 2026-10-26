@@ -28,7 +28,7 @@ async function openCapture(tab, quick = false) {
 }
 // onClicked is a recovery path if the browser has lost the registered popup.
 chrome.action.onClicked.addListener(tab=>{void openCapture(tab).catch(console.error);});
-chrome.commands.onCommand.addListener(command=>{if(command==='kumo-open'||command==='kumo-save')void openCapture(undefined,command==='kumo-save').catch(console.error);});
+chrome.commands.onCommand.addListener((command,tab)=>{if(command==='kumo-open'||command==='kumo-save')void openCapture(tab,command==='kumo-save').catch(console.error);});
 
 chrome.runtime.onMessage.addListener((message, _sender, respond) => {
   if (message?.type === 'kumo-health') respond({ok: true, version: chrome.runtime.getManifest().version});

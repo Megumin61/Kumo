@@ -4,7 +4,7 @@ import hashlib, json, zipfile
 root=Path(__file__).resolve().parents[1]
 dist=root/'dist'
 dist.mkdir(exist_ok=True)
-ignored={'.git','node_modules','dist','__pycache__'}
+ignored={'.git','node_modules','dist','deliverables','__pycache__'}
 forbidden={'local-config.json','bridge-config.json','.env'}
 def entries(folder):
     return sorted(p for p in folder.rglob('*') if p.is_file() and not any(x in ignored for x in p.relative_to(root).parts) and p.name not in forbidden)
@@ -17,11 +17,11 @@ def archive(name, pairs):
         if z.testzip(): raise RuntimeError('Archive verification failed')
     return dest
 
-browser=archive('kumo-0.18.0-browser.zip',[(p,p.relative_to(root/'browser-extension')) for p in entries(root/'browser-extension')])
+browser=archive('kumo-0.18.1-browser.zip',[(p,p.relative_to(root/'browser-extension')) for p in entries(root/'browser-extension') if 'tests' not in p.relative_to(root/'browser-extension').parts])
 plugin_root=root/'plugins/kumo'
 plugin_files=[p for p in entries(plugin_root) if 'src' not in p.relative_to(plugin_root).parts]
 plugin=archive('kumo-0.13.4-plugin.zip',[(p,p.relative_to(plugin_root)) for p in plugin_files])
-full=archive('kumo-0.18.0-local-install.zip',[(p,Path('Kumo')/p.relative_to(root)) for p in entries(root)])
+full=archive('kumo-0.18.1-local-install.zip',[(p,Path('Kumo')/p.relative_to(root)) for p in entries(root)])
 artifacts=[browser,plugin,full]
 lines=[f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}' for p in artifacts]
 (dist/'SHA256SUMS.txt').write_text('\n'.join(lines)+'\n',encoding='utf-8')

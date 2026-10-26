@@ -30,6 +30,7 @@
       `title: ${yaml(clip.title)}`,
       `source_url: ${yaml(clip.url)}`,
       `captured_url: ${yaml(clip.capturedUrl)}`,
+      `access_url: ${yaml(clip.accessUrl || clip.url)}`,
       `platform: ${yaml(clip.platform)}`,
       `platform_id: ${yaml(clip.platformId || 'generic')}`,
       `platform_guide: ${yaml(clip.platformGuide || 'platforms/generic.md')}`,
