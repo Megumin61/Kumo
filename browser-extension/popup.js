@@ -21,7 +21,8 @@ const progressLabelEl = document.getElementById('progress-label');
 const progressTimeEl = document.getElementById('progress-time');
 const progressDetailEl = document.getElementById('progress-detail');
 document.getElementById('app-version').textContent = `v${chrome.runtime.getManifest().version}`;
-document.querySelectorAll('select:not([hidden])').forEach(control=>KumoUI.select(control));
+const refreshSelects=new Map();
+document.querySelectorAll('select:not([hidden])').forEach(control=>refreshSelects.set(control,KumoUI.select(control)));
 const settingsEntry=document.getElementById('settings-open');settingsEntry.prepend(KumoUI.icon('gear'));settingsEntry.append(KumoUI.icon('chevron'));
 document.querySelector('.entry-label').prepend(KumoUI.icon('bookmark')); document.getElementById('open-library').append(KumoUI.icon('chevron'));
 const decorateSave=()=>{if(!saveEl.querySelector('svg'))saveEl.prepend(KumoUI.icon('sparkle'));}; decorateSave(); new MutationObserver(decorateSave).observe(saveEl,{childList:true});
@@ -79,7 +80,7 @@ let completeSaved = false;
 let targetEpoch=0;
 for(const [id,label] of [['claude','Claude Code'],['qoder','Qoder']])TARGETS[id]={...TARGETS.generic,id,label,rootLabel:label+' 项目资料文件夹'};
 const preferences=KumoDestination.options(localStorage);
-screenshotEl.checked=preferences.screenshot;downloadImagesEl.checked=preferences.images;downloadVideoEl.checked=preferences.video;commentCountEl.value=String(preferences.comments);
+screenshotEl.checked=preferences.screenshot;downloadImagesEl.checked=preferences.images;downloadVideoEl.checked=preferences.video;commentCountEl.value=String(preferences.comments);refreshSelects.get(commentCountEl)?.();
 function usingBridge(){return targetEl.value==='codex'&&Boolean(bridgeStatus?.ok)&&locationModeEl.value==='auto';}
 function currentProfile(){return ['directory','downloads'].includes(locationModeEl.value)?{...TARGETS.generic,label:'本地资料库'}:TARGETS[targetEl.value];}
 
@@ -592,6 +593,7 @@ async function loadTarget() {
   if(requestId!==targetEpoch)return;
   bridgeStatus=connection;directoryHandle=handle;
   locationModeEl.value=KumoDestination.initialMode(savedMode,requestedTarget==='codex'?connection:null);
+  refreshSelects.get(locationModeEl)?.();
   updateFolder(directoryHandle);
   const bridgeExpected=requestedTarget==='codex'&&locationModeEl.value==='auto';
   await KumoTags.load(usingBridge() && Boolean(bridgeStatus?.capabilities?.includes('library_browser')),{bridgeExpected}).catch(error => setStatus('标签暂时无法读取：'+error.message,'warning'));
