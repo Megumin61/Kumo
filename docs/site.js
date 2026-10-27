@@ -27,9 +27,9 @@ const state={style:'green-crayon'};
 let currentStyle=styles.find(s=>s.id===state.style),styleTimer=null;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');let paused=reduced.matches;
 const art=(f,v=0)=>currentStyle.nodes[f+'-'+v];
-const frame=$('product-frame');let frameReady=false;
-function sendToGarden(data){if(frameReady)frame.contentWindow.postMessage({type:'kumo-demo-control',...data},location.origin);}
-window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==frame.contentWindow||e.data?.type!=='kumo-demo-state')return;
+const frame=$('product-frame'),demoOrigin=new URL(frame.src).origin;let frameReady=false;
+function sendToGarden(data){if(frameReady)frame.contentWindow.postMessage({type:'kumo-demo-control',...data},demoOrigin);}
+window.addEventListener('message',e=>{if(e.origin!==demoOrigin||e.source!==frame.contentWindow||e.data?.type!=='kumo-demo-state')return;
  if(!frameReady){frameReady=true;$('product-loading').hidden=true;sendToGarden({style:state.style});}
  else if(e.data.style&&e.data.style!==state.style&&styles.some(s=>s.id===e.data.style))setStyle(e.data.style,false);
  document.querySelectorAll('[data-product-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.productView===e.data.view)));

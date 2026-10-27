@@ -1,7 +1,7 @@
 // Integration around the unmodified product UI; no alternative graph renderer.
 const q=new URL(location.href).searchParams;
 if(q.get('embed')==='1')document.documentElement.classList.add('demo-embedded');
-const parentOrigin=location.origin;
+const parentOrigin=q.get('host')==='sites'?'https://kumo-clip-jayce.ximisapa.chatgpt.site':location.origin;
 function notify(){if(parent!==window)parent.postMessage({type:'kumo-demo-state',style:document.body.dataset.scheme,view:document.getElementById('tab-converge')?.getAttribute('aria-selected')==='true'?'garden':'colony'},parentOrigin);}
 const badge=document.createElement('div');badge.className='public-demo-notice';badge.textContent='官网体验 · 示例资料';badge.title='使用产品的真实界面与交互，内容为虚构示例。外观与笔记仅保存在这个网站的浏览器中。';document.body.append(badge);
 addEventListener('message',e=>{if(e.origin!==parentOrigin||e.source!==parent||!e.data||e.data.type!=='kumo-demo-control')return;
