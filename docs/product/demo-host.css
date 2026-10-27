@@ -1,1 +1,3 @@
 .public-demo-notice{position:fixed;z-index:100;bottom:8px;left:18px;border:1px solid #c7d1b8;border-radius:30px;padding:5px 12px;font-size:11px;color:#47613c;background:#faf8ebed;box-shadow:0 2px 9px #25391e12;pointer-events:none}.demo-embedded .frame-landscape{display:none}@media(max-width:600px){.public-demo-notice{bottom:5px;left:8px;font-size:10px}}
+/* Fit the existing responsive renderer to the host window, including short fullscreen displays. */
+@media(min-width:701px){.demo-embedded body:not(.is-collection-panel) #chart{height:calc(100dvh - 200px)!important;min-height:260px}.demo-embedded body:not(.is-collection-panel) #reader{max-height:calc(100dvh - 104px)}}
