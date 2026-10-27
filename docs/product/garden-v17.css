@@ -1,0 +1,315 @@
+/* ============ v17 · 内容优先、信息有层次 ============ */
+:root{--v17-card:#fffdf4;--v17-line:#e3e5cc;--v17-ink:#4b4733;--v17-muted:#8d876e;--v17-accent:#5f7f49;--v17-gold:#c99a2e}
+
+/* ---- 平台标记：所有卡片共用 ---- */
+.plat{display:inline-grid;place-items:center;flex:none;width:15px;height:15px;border-radius:4px;color:#fff;font:700 9px/1 Inter,"Segoe UI","Microsoft YaHei",sans-serif;vertical-align:-3px;margin-right:5px}
+.plat svg{width:9px;height:9px;fill:#fff;display:block}
+.plat-x{background:#15181b}.plat-xhs{background:#ff2442}.plat-bili{background:#00a1d6}.plat-youtube{background:#ff0033;font-size:7px}.plat-wechat{background:#07c160}.plat-zhihu{background:#0a66ff}.plat-github{background:#24292f}.plat-other{background:#8f937e}
+#tooltip .tooltip-source{display:flex;align-items:center;margin-top:5px}#tooltip .tooltip-source .tooltip-meta{margin:0}
+.source-meta{display:flex;align-items:center}
+.preview-source{display:flex!important;align-items:center;min-width:0}.preview-source .plat{margin-right:4px}
+
+/* ---- 画布卡片：叶片形状 + 叶脉连线，不再用等距虚线 ---- */
+.knowledge-fragment{border:1px solid #cdd5b4!important;border-radius:4px 18px 4px 18px!important;background:var(--style-paper)!important;box-shadow:0 4px 14px #5a50321a!important;padding:8px 12px 9px!important}
+.fragment-head{display:flex;align-items:center;gap:0;margin-bottom:3px;min-width:0;padding-right:36px}
+.fragment-head .plat{margin-right:5px}
+.fragment-source{font-size:9px;color:#8a936f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fragment-flag{font-style:normal;font-size:9px;color:#b08f3e;margin-left:6px;white-space:nowrap}.fragment-flag:empty{display:none}
+.fragment-cover{top:9px!important;right:10px!important;width:32px!important;height:40px!important;border-radius:3px 9px 3px 9px!important}
+.knowledge-fragment:has(.fragment-cover) .fragment-title{padding-right:0!important}
+.fragment-tether{stroke:#6d8f52!important;stroke-width:1.5!important;stroke-opacity:.8!important;stroke-dasharray:none!important;stroke-linecap:round;fill:none}
+.fragment-bud{fill:#93b572;stroke:#fffdf4;stroke-width:1.3;pointer-events:none}
+.garden-edge.related-peek{stroke:#7f9a62!important;stroke-width:1.3!important;stroke-dasharray:none!important;stroke-linecap:round;stroke-opacity:.7!important}
+.related-peek .node-preview{border:1px solid #c3cdab!important;border-radius:4px 18px 4px 18px!important}
+
+/* ---- 花园惊喜：只在“新长出素材”时出现一次，5 秒后自己收起，不压住内容 ---- */
+.garden-surprise{top:70px!important;bottom:auto!important;right:22px!important;left:auto!important;width:auto!important;max-width:330px;padding:10px 34px 10px 12px!important;gap:10px!important;border-radius:14px 4px 14px 4px!important;box-shadow:0 8px 24px #5a4b2a22!important;transform:translateY(-8px)!important}
+.garden-surprise.open{transform:none!important;opacity:1}
+.garden-surprise .surprise-row{flex:none}
+.garden-surprise .surprise-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.garden-surprise .surprise-text small{font-size:10px;font-weight:600;letter-spacing:.02em}
+.garden-surprise .surprise-text strong{font-size:13px;margin:0}
+.garden-surprise .surprise-origin{margin:0;font-size:11px;color:#7f8c63;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- 右栏首页：今天的数字在最上面，其余往下弱化 ---- */
+.today-garden{margin:0 0 10px!important}
+.today-cell{padding:10px 12px!important;border-radius:12px 4px 12px 4px!important}
+.garden-line{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;align-items:center;padding:8px 12px;margin:0 0 10px;border:1px solid #e8e3c6;border-radius:10px;background:#f6f2de;font-size:12px;color:#6e6a4e}
+.garden-line b{color:#4f6b3d;font-weight:650}
+.garden-line progress{grid-column:1/3;width:100%;height:4px;accent-color:#7d9a5c}
+.resume-reading{display:block;width:100%;text-align:left;margin:0 0 4px;padding:6px 2px;border:0;background:none;color:#7d8b66;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resume-reading:hover{color:#4f6b3d}
+.home-heading{margin:18px 0 8px!important;font-size:13px!important}
+.domain-cards{display:grid;gap:8px}
+.domain-card{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--v17-line);border-radius:14px 4px 14px 4px;background:var(--v17-card);cursor:pointer;font:inherit;color:var(--v17-ink);transition:border-color .15s,box-shadow .15s}
+.domain-card:hover{border-color:#a9bf86;box-shadow:0 3px 12px #5a6b3a14}
+.domain-card .domain-medallion{width:50px;height:50px;display:grid;place-items:center;position:relative}
+.domain-card-body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.domain-card-body strong{font-size:13.5px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.domain-card-body small{font-size:11px;color:var(--v17-muted)}
+.domain-card-tags{display:flex;gap:4px;flex-wrap:nowrap;overflow:hidden}.domain-card-tags i{font-style:normal;font-size:10px;padding:1px 7px;border-radius:999px;background:#f0eedb;color:#68724c;white-space:nowrap}
+.domain-card-count{display:flex;align-items:baseline;gap:2px;position:relative}
+.domain-card-count b{font:650 19px/1 "Segoe UI",sans-serif;color:#4f6b3d}.domain-card-count em{font-style:normal;font-size:10px;color:var(--v17-muted)}
+.domain-card-count s{text-decoration:none;color:var(--v17-gold);font-size:11px;margin-left:3px}
+.fresh-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e8b93a;margin-left:5px;align-self:center;text-decoration:none}
+.home-quiet{display:flex;flex-wrap:wrap;gap:4px 16px;margin:20px 0 4px;padding-top:10px;border-top:1px solid #ecebd6}
+.quiet-link{border:0;background:none;padding:0;color:#9a957a;font-size:11px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.quiet-link:hover{color:#5f7f49}
+
+/* ---- 领域 / 主题详情：统一卡片 ---- */
+.dom-hero{margin:2px 0 12px;padding:14px;border:1px solid var(--v17-line);border-radius:16px 4px 16px 4px;background:linear-gradient(160deg,#fffdf4,#f6f3df)}
+.dom-hero-top{display:flex;align-items:center;gap:14px}
+.dom-hero .domain-medallion{width:56px;height:56px;display:grid;place-items:center;position:relative;flex:none}
+.dom-stats{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;flex:1;text-align:center}
+.dom-stats small{white-space:nowrap}.dom-stats b{display:block;font:650 21px/1.1 "Segoe UI",sans-serif;color:#46602f}.dom-stats small{font-size:10.5px;color:var(--v17-muted)}
+.dom-stage{margin:10px 0 0;font-size:12px;color:#6f6a4d}.dom-stage b{color:#5b7a43;font-weight:650}
+.dom-hero .digest-tags{margin:10px 0 0}
+.dom-card{margin:10px 0;padding:12px 14px;border:1px solid var(--v17-line);border-radius:12px;background:var(--v17-card)}
+.dom-card>h3{display:flex;align-items:center;margin:0 0 6px;font-size:12px;font-weight:650;color:#587a45;letter-spacing:.03em}
+.dom-card>h3::before{content:'';width:3px;height:11px;border-radius:2px;background:var(--v17-accent);margin-right:7px}
+.view-row{display:grid;grid-template-columns:22px minmax(0,1fr);gap:9px;padding:9px 0;border-top:1px solid #efeddb}
+.dom-card>h3+.view-row{border-top:0;padding-top:4px}
+.view-no{width:20px;height:20px;border-radius:50%;background:#e8efd8;color:#587a45;font:600 11px/20px "Segoe UI",sans-serif;text-align:center;font-style:normal}
+.view-row strong{display:block;font-size:13px;font-weight:600;color:var(--v17-ink);line-height:1.5}
+.view-row p{margin:2px 0 0;font-size:12px;line-height:1.75;color:#7a735a}
+.views-card .digest-links{margin-top:10px}
+.essence-card .essence-item{margin:8px 0 0;padding:9px 12px;border-left:3px solid #dcb95a;border-radius:0 10px 10px 0;background:#fbf5e0;font-size:12px;line-height:1.75;color:#6b5d3a}
+.topic-bar{display:flex;gap:2px;height:10px;margin:2px 0 10px}
+.topic-bar i{display:block;min-width:6px;border-radius:3px;background:color-mix(in srgb,var(--v17-accent) calc(var(--shade)*100%),#fffdf4)}
+.topic-chips{display:flex;flex-wrap:wrap;gap:6px}
+.topic-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid #dfe3c8;border-radius:999px 999px 999px 4px;background:#fbfaee;font:inherit;font-size:11.5px;color:#586a43;cursor:pointer}
+.topic-chip b{font-weight:600;color:#9a8f55;font-size:11px}.topic-chip:hover{border-color:#a9bf86;background:#f3f6e6}
+.digest-note{margin:10px 0;font-size:11.5px;color:#a08b57}
+
+/* ---- 先读一篇：带封面、平台、一句话，放在最下面 ---- */
+.reader-fragments{margin:14px 0 6px!important}
+.reader-fragments h3{display:flex;align-items:center;font-size:12px!important;font-weight:650!important;color:#587a45!important;letter-spacing:.03em;margin:0 0 8px!important}
+.reader-fragments h3::before{content:'';width:3px;height:11px;border-radius:2px;background:var(--v17-accent);margin-right:7px}
+.reader-fragment{display:flex!important;align-items:flex-start;gap:11px;padding:10px 12px!important;border:1px solid var(--v17-line)!important;border-radius:14px 4px 14px 4px!important;background:var(--v17-card)!important;cursor:pointer}
+.reader-fragment:hover{border-color:#a9bf86!important}
+.reader-fragment-cover{width:54px;height:68px;flex:none;object-fit:cover;border-radius:4px 12px 4px 12px}
+.reader-fragment-text{min-width:0;flex:1}
+.reader-fragment-head{display:flex;align-items:center;font-size:10px;color:#8f9873;margin-bottom:3px;min-width:0}.reader-fragment-head span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reader-fragment-text strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px!important;line-height:1.5!important}
+.reader-fragment-text p{margin:4px 0 0!important}
+.reader-fragment-text small{display:block;margin-top:5px!important;font-size:10px}
+.reader-fragment.is-lead{border-color:#cdd9ae!important}
+
+/* ---- 花种：先看到它所在领域的内容 ---- */
+.seed-strip{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:9px 12px;border:1px solid #e6dfb8;border-radius:12px;background:#faf3d9}
+.seed-strip.is-owned{background:#f1f5e0;border-color:#d5e0b6}
+.seed-strip>div{flex:1;min-width:0}.seed-strip strong{display:block;font-size:13px;color:#4c4a2c}.seed-strip small{display:block;font-size:11px;color:#8d8660;margin-top:1px}
+.seed-strip progress{width:100%;height:4px;margin-top:6px;accent-color:#d1a73d}
+.seed-strip .catalogue-art{flex:none}
+
+/* ---- 帖子页：“相关收藏”弱化成折叠小列表 ---- */
+.quiet-related{margin-top:16px;padding:8px 0 0;border-top:1px solid #ecebd6}
+.quiet-related>summary{font-size:11.5px;color:#9a957a;cursor:pointer}
+.quiet-related .reader-link{opacity:.85}
+
+/* ---- 节点图鉴：统一素黄底色，稀有度用左上角星星 ---- */
+.atlas-item,.atlas-item[data-rarity]{--rarity-paper:#fbf4dc;--rarity-glow:#fffaf0;--rarity-line:#e8dcae;--rarity-ink:#8b7a3c;background:radial-gradient(ellipse at 50% 38%,#fffaea,transparent 74%),#faf2d8!important;border:1px solid #e8dcae!important;padding-top:32px!important}
+.atlas-item[data-rarity]::before{content:none!important}
+.atlas-item.locked{background:radial-gradient(ellipse at 50% 38%,#fffcf2,transparent 74%),#f7f1de!important;border:1px solid #ebe3c4!important;border-style:solid!important}
+.atlas-item.locked .catalogue-art{opacity:.55;filter:grayscale(.55) saturate(.8)}
+.atlas-item.selected{outline:2px solid #cdb560!important;outline-offset:-2px}
+.rarity-badge{left:9px!important;top:9px!important;padding:1px 7px 1px 6px;border-radius:999px;background:#fffdf0;border:1px solid #e9dfb4;color:var(--star,#a9a58b)!important;font-size:11px!important;letter-spacing:1px!important;line-height:1.5!important}
+.rarity-badge::before{content:none!important}
+.rarity-1{--star:#a7a48a}.rarity-2{--star:#5c9a68}.rarity-3{--star:#5a7fcb}.rarity-4{--star:#d79a1c}
+.intro-level{letter-spacing:1px}
+
+/* 摘要的第二段正文：回到阅读字号 */
+#reader-body>.readable-summary{margin:0 0 12px}
+#reader-body>.readable-summary p{margin:0 0 6px;font-size:12.5px!important;line-height:1.8!important;color:#6f6a50!important;font-weight:400!important}
+#detail-summary{font-size:12.5px;line-height:1.75}
+
+/* ===== v18 ===== */
+/* 小黄点：更黄、更亮 */
+.fresh-dot{fill:#ffc61a!important;stroke:#fffdf2!important;stroke-width:1.6}
+.fresh-halo{fill:#ffd84a!important;opacity:.55!important}
+.fresh-sprout{filter:drop-shadow(0 0 3px #ffd44a99)}
+.fresh-dot-note,.fresh-dot{background:#ffc61a}
+/* 花种：引导圈（实线圈，轻轻呼吸） */
+.seed-hint{pointer-events:none}
+.seed-ring{fill:none;stroke:#d4980f;stroke-width:2.2;opacity:.95;vector-effect:non-scaling-stroke}
+.seed-ring-2{stroke:#e8c25a;opacity:.5;transform-box:fill-box;transform-origin:center;animation:v18-seed 2.8s ease-out infinite}
+.seed-hint.is-owned .seed-ring{stroke:#8fae6a}.seed-hint.is-owned .seed-ring-2{stroke:#b3c98d}
+@keyframes v18-seed{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.28);opacity:0}}
+@media(prefers-reduced-motion:reduce){.seed-ring-2{animation:none}}
+.seed-wrap{display:grid;gap:6px;margin-bottom:10px}.seed-wrap .seed-strip{margin-bottom:0}
+.seed-explain{margin:0;padding:7px 10px;border-radius:10px;background:#fbf4d6;color:#7a6a2c;font-size:12px;line-height:1.55}
+#reader-body .seed-explain{margin:0;padding:7px 10px;border-radius:10px;background:#fbf4d6;color:#7a6a2c;font-size:12px;line-height:1.55}
+
+/* 文字改绿色 */
+.garden-node .name,.domain-caption .name,body[data-garden-style] .garden-node .name,body[data-garden-style] .domain-caption .name,.topic-region-label text{fill:#3f6b34!important;color:#3f6b34!important}
+
+/* ===== v19 ===== */
+/* 领域：只留一个大圈，花瓣边 + 小叶；主题不再有小圈 */
+.topic-habitat{display:none!important}
+.flair-edge{fill:none;stroke-width:1.5;stroke-linejoin:round;opacity:.6;vector-effect:non-scaling-stroke}
+.flair-leaf path{stroke-width:.7;opacity:.9}
+/* 连线：领域→主题 实线较粗；主题→帖子 细实线；直属帖子 点线 */
+.garden-edge.membership.m-domain-topic{stroke:#7f9c68!important;stroke-width:1.9!important;stroke-dasharray:none!important;stroke-opacity:.75!important;animation:none!important}
+.garden-edge.membership.m-topic-source{stroke:#8fae78!important;stroke-width:1.1!important;stroke-dasharray:none!important;stroke-opacity:.7!important;animation:none!important}
+.garden-edge.membership.m-domain-source{stroke:#9fb58a!important;stroke-width:1.2!important;stroke-dasharray:2 6!important;stroke-linecap:round;stroke-opacity:.75!important;animation:none!important}
+/* 右侧卡片左侧图标底色：统一浅色 */
+.domain-medallion::before,.domain-medallion[class*=fam-]::before{background:#fbf3d3!important;opacity:1!important;animation:none!important;border-radius:50%!important}
+/* 悬浮卡：标题与正文分开 */
+#tooltip strong{color:#2f5a2c!important;font-weight:700!important;font-size:13.5px!important}
+#tooltip .tooltip-meta{color:#a2956f!important}
+#tooltip .tooltip-intro{color:#7d7568!important;font-weight:400!important;font-size:12px!important}
+#tooltip .tooltip-list{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:4px}
+#tooltip .tooltip-list li{position:relative;padding-left:12px;font-size:12px;color:#6f6a5c;line-height:1.5;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+#tooltip .tooltip-list li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:2px 6px 2px 6px;background:#9dbb78}
+/* 知识碎片花苞 */
+.frag-spot{cursor:pointer}
+.bud-glow{fill:#ffe27a;opacity:.0;transform-box:fill-box;transform-origin:center;animation:v19-bud 3.2s ease-in-out infinite}
+.frag-spot:hover .bud-glow{opacity:.55}
+@keyframes v19-bud{0%,100%{opacity:.12;transform:scale(.9)}50%{opacity:.4;transform:scale(1.25)}}
+.bud-stem{stroke:#6f9358;stroke-width:1.6;stroke-linecap:round}
+.bud-leaf{fill:#9dbb78;stroke:#6f9358;stroke-width:.6}
+.bud-petal{fill:#ffd24a;stroke:#e8a91c;stroke-width:.6}
+.bud-core{fill:#fff4b8;stroke:#e8a91c;stroke-width:.5}
+@media(prefers-reduced-motion:reduce){.bud-glow{animation:none;opacity:.25}}
+/* 藤蔓：由粗渐细的实心线 */
+.garden-edge.membership.vine,.garden-edge.vine{fill:#86a56e!important;stroke:none!important;stroke-dasharray:none!important;fill-opacity:.85;animation:none!important}
+.garden-edge.membership.vine.m-topic-source{fill:#9bb882!important;fill-opacity:.8}
+.garden-edge.membership.vine.m-domain-source{fill:#a8be92!important}
+.frag-vine{fill:#9bb882;fill-opacity:.85;stroke:none;pointer-events:none}
+.grow-in{animation:v20-grow 1.1s cubic-bezier(.2,.8,.3,1) both;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes v20-grow{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.grow-in{animation:none}}
+.frag-bud.sprout .bud-petal{fill:#d9e8a6;stroke:#9bb25d}
+.seed-hint{display:none}
+/* 主题碎片卡：简约叶形，跟原来的悬浮卡同一种样子 */
+.fragment-pop{position:absolute;z-index:6;width:300px;padding:10px 13px 10px;border:1px solid #d6d9ae;border-radius:6px 24px 6px 24px;background:#fbfaea;box-shadow:0 8px 24px #5a6b3a22;color:#4b5a3a}
+.fp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.fp-flag{font-size:11px;color:#8aa06a;letter-spacing:.3px}
+.fp-x{border:0;background:none;color:#a2a58a;font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
+.fp-body{display:flex;gap:11px;align-items:center}
+.fp-cover{width:74px;height:92px;object-fit:cover;border-radius:6px 14px 6px 14px;border:1px solid #e3e1c5;flex:none;background:#fff}
+.fp-copy{min-width:0;display:grid;gap:7px}
+.fp-title{font-size:15px;line-height:1.4;color:#3e6b3a;font-weight:700;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.fp-meta{display:flex;align-items:center;gap:7px;color:#9aa07c;font-size:11.5px;line-height:1.4}.fp-meta small{font-size:11.5px}
+.fp-point{margin:10px 0 8px;padding:7px 10px;border-left:3px solid #a9c486;border-radius:2px 10px 10px 2px;background:#f1f4dc;font-size:12.5px;line-height:1.6;color:#4a5b38}.fp-point b{color:#6f8d4f;font-weight:600}
+.fp-foot{display:flex;align-items:center;gap:8px}.fp-trail{flex:1;min-width:0;color:#a29a78;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-foot button{border:1px solid #cfd9a9;background:#f2f6df;color:#4f6b36;border-radius:999px;padding:3px 11px;font-size:11.5px;cursor:pointer;white-space:nowrap}
+.fp-foot button.quiet{background:none;border-color:transparent;color:#9a957a;text-decoration:underline dotted;text-underline-offset:3px;padding:3px 4px}
+
+/* ===== v21 ===== */
+/* 泡泡：不要花圈，只留毛玻璃 */
+.domain-flair,.habitat-edge-mark{display:none!important}
+.garden-plot{transition:filter .3s}
+/* 选中碎片不要外框 */
+.frag-spot,.frag-bud,.frag-spot:focus,.frag-bud:focus,.frag-spot:focus-visible,.frag-bud:focus-visible{outline:none!important}
+/* 主题碎片：浅黄色 */
+.frag-vine{fill:#efdc93!important;fill-opacity:.9}
+.bud-glow{fill:#ffe9a0!important}
+.fragment-pop{border-color:#ecdca0!important;background:linear-gradient(160deg,#fffcec,#fff6cf)!important;box-shadow:0 8px 24px #8a6d1a22!important;color:#3c3420!important}
+.fp-flag{color:#b58d1d!important}
+.fp-title{color:#2f2a18!important}
+.fp-meta{color:#8e8566!important}
+.fp-cover{border-color:#efe3b5!important}
+.fp-point{border-left-color:#f0c94a!important;background:#fdf1bd!important;color:#473d1c!important}.fp-point b{color:#a9791a!important}
+.fp-trail{color:#9b9170!important}
+.fp-foot button{border-color:#ecd78a!important;background:#fff0b5!important;color:#7a5d12!important}
+.fp-foot button.quiet{background:none!important;border-color:transparent!important;color:#9b9170!important}
+/* 藤蔓上的叶子 */
+.vine-leaves{fill:#97b872;stroke:#6b8f52;stroke-width:.5;stroke-linejoin:round;pointer-events:none}
+.garden-edge.membership.vine{fill:#7f9f68!important;fill-opacity:.92}
+.garden-edge.membership.vine.m-topic-source{fill:#93b27a!important}
+/* 主题弹板：点开主题后，里面的收藏全部围在它旁边 */
+.topic-cards{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden}
+.topic-card{position:absolute;width:172px;min-height:62px;display:flex;gap:8px;align-items:center;padding:6px 9px 6px 6px;border:1px solid #e6dc9f;border-radius:4px 16px 4px 16px;background:linear-gradient(160deg,#fffdf0,#fff6d2);box-shadow:0 5px 16px #6b551a1f;color:#2f2a18;text-align:left;cursor:pointer;pointer-events:auto;animation:v21-pop .45s cubic-bezier(.2,.8,.3,1) both}
+.topic-card:hover{border-color:#e2c75e;box-shadow:0 7px 20px #6b551a33}
+.topic-card img{width:40px;height:50px;object-fit:cover;border-radius:4px 10px 4px 10px;flex:none;background:#fff;border:1px solid #efe3b5}
+.topic-card span{min-width:0;display:grid;gap:4px}
+.topic-card strong{font-size:12px;line-height:1.4;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.topic-card small{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#8e8566}
+.topic-card .plat{transform:scale(.8);transform-origin:left center}
+@keyframes v21-pop{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:none}}
+/* 联系线：换成金色细丝，不再是灰虚线 */
+.garden-edge.source-relation,.garden-edge.internal-relation,.garden-edge.relation{stroke:#d5a63a!important;stroke-width:2.2!important;stroke-dasharray:none!important;stroke-linecap:round;stroke-opacity:.9!important;animation:none!important;filter:drop-shadow(0 0 3px #f3d27a99)}
+.relation-trigger rect{fill:#fff7d6!important;stroke:#e4c566!important}
+.relation-trigger text{fill:#6b5412!important;font-weight:700}
+/* 右侧阅读栏：标题、导语、分块 */
+#detail-title{font-weight:800!important;color:#223a20!important;letter-spacing:.2px}
+#detail-summary:not(:empty){margin:10px 0 12px!important;padding:10px 13px;background:#e9f3dc;border-left:4px solid #78a35a;border-radius:4px 14px 14px 4px;font-size:14px!important;font-weight:650!important;line-height:1.65!important;color:#27421f!important}
+#reader-body .dom-card>h3{display:inline-flex;align-items:center;margin:0 0 9px;padding:2px 11px;background:#e4efd3;border-radius:999px;font-size:12.5px;font-weight:800;color:#2f5a2c;letter-spacing:.3px}
+#reader-body .dom-card{background:#fcfdf7;border-color:#dce7c9}
+#reader-body .contents-card{display:grid;gap:8px}
+#reader-body .content-row{display:grid;gap:3px;width:100%;padding:8px 11px;border:1px solid #dbe6c6;border-radius:4px 14px 4px 14px;background:#fff;text-align:left;cursor:pointer}
+#reader-body .content-row:hover{border-color:#a9c486;background:#f6faec}
+#reader-body .content-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#reader-body .content-head strong{font-size:13.5px;font-weight:800;color:#23401f}
+#reader-body .content-head b{flex:none;padding:1px 9px;border-radius:999px;background:#e4efd3;color:#3f6b2f;font-size:11.5px;font-weight:700}
+#reader-body .content-row p{margin:0;font-size:12px;line-height:1.55;color:#55634c}
+#reader-body .view-row p{color:#2f3b2b!important;font-size:12.8px;line-height:1.65}
+#reader-body .view-row strong{font-weight:800;color:#23401f}
+#reader-body .essence-item{background:#f1f6e4!important;border-left:3px solid #94b872!important;color:#32452b!important;font-weight:500}
+#reader-body .digest-note{color:#667560}
+
+/* ===== v22 ===== */
+/* 地图图例：黄点是什么意思 */
+.map-legend{position:absolute;left:14px;bottom:58px;z-index:4;display:flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;background:#ffffffd9;border:1px solid #ecebe0;font-size:11px;color:#6d7366;backdrop-filter:blur(6px);pointer-events:none}
+.map-legend i{width:9px;height:9px;border-radius:50%;background:#ffc61a;box-shadow:0 0 0 3px #ffd84a55}
+/* 主题碎片：淡，像背景色 */
+.frag-vine{fill:#dbe4cb!important;fill-opacity:.8!important}
+.bud-glow{fill:#f6f0d2!important}
+.frag-bud foreignObject,.frag-bud>g{opacity:.92}
+.fragment-pop{border-color:#ebe8d8!important;background:#fffefa!important;box-shadow:0 8px 24px #3d46321a!important;color:#2f3329!important}
+.fp-flag{color:#8d9279!important}
+.fp-title{color:#252a20!important}
+.fp-meta,.fp-trail{color:#8d9279!important}
+.fp-cover{border-color:#efede0!important}
+.fp-point{border-left-color:#d9d6b0!important;background:#f6f5ea!important;color:#3d4236!important}.fp-point b{color:#6f7358!important}
+.fp-foot button{border-color:#e6e3d0!important;background:#f6f5ea!important;color:#5d6150!important}
+.topic-card{border-color:#ebe8d8!important;background:#fffefa!important;box-shadow:0 5px 16px #3d46321a!important;color:#2a2f24!important}
+.topic-card:hover{border-color:#d6d2b4!important}
+.topic-card img{border-color:#efede0!important}
+.topic-card small{color:#8d9279!important}
+/* 藤蔓上的叶子：沿用知识花园那种小叶 */
+.garden-edge.membership.vine{fill:#8fae7a!important;fill-opacity:.85!important}
+.garden-edge.membership.vine.m-topic-source{fill:#a5c08f!important}
+.vine-leaves{display:none}
+/* 右栏：参考常见 AI 产品，白底、中性灰、只留一点点绿 */
+#detail-title{font-weight:700!important;color:#1f2420!important;letter-spacing:0!important}
+#detail-summary:not(:empty){margin:8px 0 14px!important;padding:0!important;background:none!important;border:0!important;border-radius:0!important;font-size:14px!important;font-weight:600!important;line-height:1.65!important;color:#2b3128!important}
+#reader-body .dom-hero{background:#fff!important;border:1px solid #ebebe4!important;border-radius:12px!important}
+#reader-body .dom-stats b{color:#1f2420!important}
+#reader-body .dom-stage b{color:#4a6b3e!important}
+#reader-body .dom-card{background:#fff!important;border:1px solid #ebebe4!important;border-radius:12px!important}
+#reader-body .dom-card>h3{display:block!important;margin:0 0 8px!important;padding:0!important;background:none!important;border-radius:0!important;font-size:13px!important;font-weight:700!important;color:#1f2420!important;letter-spacing:0!important}
+#reader-body .dom-card>h3::before{content:none!important}
+#reader-body .contents-card{display:block!important}
+#reader-body .content-row{display:grid!important;gap:2px;width:100%;padding:10px 4px!important;border:0!important;border-top:1px solid #f0f0ea!important;border-radius:0!important;background:none!important;text-align:left}
+#reader-body .contents-card>h3+.content-row{border-top:0!important}
+#reader-body .content-row:hover{background:#f8f8f3!important}
+#reader-body .content-head strong{font-size:13.5px!important;font-weight:700!important;color:#1f2420!important}
+#reader-body .content-head b{background:#f3f3ed!important;color:#6a7060!important;font-weight:600!important}
+#reader-body .content-row p{color:#6a7060!important}
+#reader-body .view-no{background:#f1f1ea!important;color:#6a7060!important}
+#reader-body .view-row{border-top-color:#f0f0ea!important}
+#reader-body .view-row strong{color:#1f2420!important}
+#reader-body .view-row p{color:#5d6356!important}
+#reader-body .essence-item{background:#f7f7f2!important;border-left:2px solid #cdd2c0!important;color:#3d4338!important;font-weight:400!important;border-radius:0 8px 8px 0!important}
+#reader-body .topic-chip{border-color:#e6e6dd!important;background:#fafaf6!important;color:#5d6356!important}
+#reader-body .reader-fragment{border-color:#ebebe4!important;background:#fff!important}
+/* 右栏首页：卡片同样中性 */
+.today-garden>*,.domain-card{background:#fff!important;border-color:#ebebe4!important}
+.domain-card:hover{border-color:#cfd5c2!important;background:#fbfbf7!important}
+.domain-medallion::before,.domain-medallion[class*=fam-]::before{background:#f6f6ef!important}
+.domain-card .digest-tags span,.domain-card [class*=tag],.dom-hero .digest-tags span{background:#f3f3ed!important;border-color:transparent!important;color:#666c5c!important}
+.level-strip,.garden-level{background:#f7f7f2!important;border-color:#ebebe4!important}
+
+/* ===== v23 ===== */
+.garden-edge.membership.vine,.vine-leaves{display:none!important}
+/* 右栏：淡绿灰分层，不用纯白 */
+#reader-body .dom-hero,#reader-body .dom-card,.today-garden>*,.domain-card,#reader-body .reader-fragment{background:linear-gradient(180deg,#f8faf3,#f1f5ea)!important;border-color:#dfe7d2!important}
+#reader-body .dom-card>h3{color:#2c4a2b!important;display:flex!important;align-items:center;gap:7px}
+#reader-body .dom-card>h3::before{content:''!important;width:6px;height:6px;border-radius:50%;background:#8fb27a;margin:0}
+#reader-body .content-row{border-top-color:#e2e9d6!important}
+#reader-body .content-row:hover{background:#ebf1e0!important}
+#reader-body .content-head b,#reader-body .view-no{background:#e1ebd3!important;color:#3f6035!important}
+#reader-body .essence-item{background:#eef3e4!important;border-left-color:#a9c490!important}
+.domain-medallion::before,.domain-medallion[class*=fam-]::before{background:#fbf6dc!important}
+.domain-card .digest-tags span,.domain-card [class*=tag],.dom-hero .digest-tags span,#reader-body .topic-chip{background:#e8efdc!important;color:#4a6840!important}

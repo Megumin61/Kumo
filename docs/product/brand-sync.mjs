@@ -1,0 +1,4 @@
+import {centreLogo,logoKey} from './appearance-remix.mjs';
+const assetBase=new URL('./',import.meta.url);
+export function syncBrand(){const chosen=centreLogo();for(const mark of document.querySelectorAll('.brand-icon,.brand .logo-crop')){mark.dataset.original=String(!!chosen.original);mark.setAttribute('aria-label',chosen.name);if(mark.classList.contains('brand-icon')){mark.style.backgroundImage='url("'+new URL(chosen.href,assetBase).href+'")';mark.style.backgroundSize=chosen.original?'969.375px auto':'cover';mark.style.backgroundPosition=chosen.original?'-48.46875px -48.46875px':'center';}else{const img=mark.querySelector('img');if(img){img.src=new URL(chosen.href,assetBase).href;img.alt=chosen.name;}}}}
+syncBrand();addEventListener('storage',e=>{if(e.key===logoKey)syncBrand();});addEventListener('kumo:appearance-change',syncBrand);

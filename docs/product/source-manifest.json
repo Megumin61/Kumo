@@ -1,0 +1,490 @@
+{
+  "description": "Production files copied byte for byte; endpoint adapter and demo host are the only integration layer.",
+  "source": "browser-extension/garden",
+  "files": [
+    {
+      "file": "appearance-controls.mjs",
+      "sha256": "63979a8ad703c579d9bab549e791ccf432dadb891dc086ccbb112c9e47fa1978"
+    },
+    {
+      "file": "appearance-remix.mjs",
+      "sha256": "5266faf9ff1cc8be695bfbcfc4696505d219075057a3c2dbfec9ababb2631235"
+    },
+    {
+      "file": "art.mjs",
+      "sha256": "75e5031c0b383f97b51acba6fef994e6667b2af9583ae596d769b3185f1e2a93"
+    },
+    {
+      "file": "atlas-metadata.mjs",
+      "sha256": "9c33acd7560977cf55e677ef7710cb35726e0f5b27b442f460ea9eff20b37636"
+    },
+    {
+      "file": "banana-logos.mjs",
+      "sha256": "054f6abdd8b017f2115f466b1eee7ccc147543e475580db898347e47f9b7aee0"
+    },
+    {
+      "file": "branch-fragments.mjs",
+      "sha256": "cf913529e7ebd2de968759da195eb5223d5599df4992932bfd97c772cb2d0786"
+    },
+    {
+      "file": "brand-logo.mjs",
+      "sha256": "225472e2d2bc69dc2b6ed9ddb14171f32ba518aca348d5da41a219031a719e8f"
+    },
+    {
+      "file": "brand-sync.mjs",
+      "sha256": "dc3d7f08e961506887abce473bc6533de89c865bd13089578dfb5de4ec40c095"
+    },
+    {
+      "file": "catalogue-clean-frames.mjs",
+      "sha256": "8dce0872c0b92ea47a5223c8fae25c158db51e4799136030e9b55597eff05ebd"
+    },
+    {
+      "file": "cellular-growth.mjs",
+      "sha256": "03d2565b87b077f2ac2619fed6ec8fc3d87cc283079e537db503407449fe3683"
+    },
+    {
+      "file": "centre-emblem.mjs",
+      "sha256": "42ca0981ea68efb17b19fd24468f5ca6a3323afc81e3d2742b49902ce6ab785b"
+    },
+    {
+      "file": "collection-cards.mjs",
+      "sha256": "78af4c37a783757bcf7c8ddceaca78506f74dbcfdaa8130f2fcb80a3ee052170"
+    },
+    {
+      "file": "collection-layout.mjs",
+      "sha256": "ee4ef31da92ee4af60263a2c7a68b0ab10503abb4219cc8bcedacfb1bb65de12"
+    },
+    {
+      "file": "collection-opportunities.mjs",
+      "sha256": "529fae70cbebfc138b0aed0343e497c6d0f2b972c56f5c9342178ebe8ebc61d9"
+    },
+    {
+      "file": "collection-shell.mjs",
+      "sha256": "cddd6f8437f8238969cdb85f921f6c324ca1bbc95a8589292975865d4109670f"
+    },
+    {
+      "file": "collection-v12.css",
+      "sha256": "923093105ca9d4c96faba03b2ac6cf3ace2c1d89a81e70f22261f0a70cfeda42"
+    },
+    {
+      "file": "colony-appearance.mjs",
+      "sha256": "182214013ca4ad3ce9db74222e09bd606cd1ce8260d65bd41d2571fa49b8591e"
+    },
+    {
+      "file": "colony-border-preview.mjs",
+      "sha256": "bbeb5382dd1d8174991461991708172cba0d5549b1f6073187150ad7b2166799"
+    },
+    {
+      "file": "colony-borders.mjs",
+      "sha256": "878ec1d687c9c5a85fff85e1d9da3da55df14f4a875c9998551e2ed2f008cae7"
+    },
+    {
+      "file": "connected-regions.mjs",
+      "sha256": "4cee492af0628b40b44a93c3b5c3f0e034ea95be1788f6fba43904ccdb3f867e"
+    },
+    {
+      "file": "content-contours-v34.mjs",
+      "sha256": "8ff6cc421fb841a5deeb6442d1fa8c052c5fe842db4e017eb9c57a7713db0f5d"
+    },
+    {
+      "file": "content-contours.mjs",
+      "sha256": "91f777657cc62ff87be5adcf7223c14971fbe0dd3ddce7618b0136c620d1a746"
+    },
+    {
+      "file": "cover.mjs",
+      "sha256": "14189a213c08b09cc90cc6d282f5470df9fdce6fc58649f11518853247acedc1"
+    },
+    {
+      "file": "design.mjs",
+      "sha256": "7d1d3621e44b3749b0f43c823e2c7f914c50ed02dc41d6c1a858e80876b36b23"
+    },
+    {
+      "file": "directed-colonies.mjs",
+      "sha256": "dd3f3dd638623aba3512fff8efd82c08b3911d206b602eae356075cd4afdb7b5"
+    },
+    {
+      "file": "domain-digests.mjs",
+      "sha256": "fadca0c7198511dd961050d53e48360e066e2a8e74474f2f06e2bc192b88b976"
+    },
+    {
+      "file": "domain-flair.mjs",
+      "sha256": "43a6c7d53d03ca45819e874ad0a67418af316b585063212501bd0fad9fe17358"
+    },
+    {
+      "file": "domain-landscapes.mjs",
+      "sha256": "6e5b04e44664f7a17c62bd6175b5937bb9abefa25d5df802e4b1b9a96a4f72c6"
+    },
+    {
+      "file": "element-library.mjs",
+      "sha256": "a1466a4ccd95f3155586212e4b228f58621833dd98459eff669f9a8141b3ed3e"
+    },
+    {
+      "file": "elements.css",
+      "sha256": "5fcd3315f45ebd9de133035b6fb0e518a0e02cd1b6364aef0211f38b65272c29"
+    },
+    {
+      "file": "elements.mjs",
+      "sha256": "8b348d2e3759a54263e975a5ccac30d1c9ce383258180d7c6445496496bf3c75"
+    },
+    {
+      "file": "exploration-focus.mjs",
+      "sha256": "59a4f888ea8b5ee95c01a084389a9be2ef53a249057b82b48a5b964ab654d362"
+    },
+    {
+      "file": "exploration-v14.css",
+      "sha256": "35bee05381060909a52767ef1dd85a0a14908719ce293c086c50d6b92577240f"
+    },
+    {
+      "file": "exploration.mjs",
+      "sha256": "79dcf10fe010ce034bd799fd2b22afd5dd02ae9bb6bd5f64d9962122f6ac9a9c"
+    },
+    {
+      "file": "force-data.mjs",
+      "sha256": "fd0cd42d1d6ad751a68c17b5b7b87ac64369041057ea258c657ccc92c6606956"
+    },
+    {
+      "file": "force-garden.mjs",
+      "sha256": "e530daa48feb2452df0d40c1c337682e3823f08d564bcd89a7a70adf97fb8445"
+    },
+    {
+      "file": "forest-journal.css",
+      "sha256": "4d79daf8e5c814045011a96316f640b388712f632ad46078a4742a1151dd757d"
+    },
+    {
+      "file": "fragment-buds.mjs",
+      "sha256": "0e4241b7a51d49eb412c580965a5fae4798ed119420a800ededbbf05a0ba0c7e"
+    },
+    {
+      "file": "fragment-design.mjs",
+      "sha256": "aa85ef0dfb4ad4d8b3f524414f74d891c3a0568af9e7fde90dad878020909703"
+    },
+    {
+      "file": "full-styles.css",
+      "sha256": "fc913d04e6eb5bdd17c738f6a5caef928a1b468863c137cab9b45decaa0e5091"
+    },
+    {
+      "file": "full-styles.mjs",
+      "sha256": "ef53b1701fa3c9ab6f13a394fcba19386a3578b4ffce7395502d2379d190df03"
+    },
+    {
+      "file": "garden-bg.css",
+      "sha256": "3496e5a41467f91ae96b4c3d680fe2d4f1b25740dc3ef2f5d9ba110b13f38a5f"
+    },
+    {
+      "file": "garden-catalogue.mjs",
+      "sha256": "e81c38b4c63cb5e68d3098800010bd67a8b20d462a4ce9a8c61afd4c61973fad"
+    },
+    {
+      "file": "garden-density.mjs",
+      "sha256": "392ceb598fa20ef5f2063fac09439472b81c155d0cf6cfec8f264ca5c70cf0cd"
+    },
+    {
+      "file": "garden-frame.mjs",
+      "sha256": "6cb23201bc968e3b9948d4488da853b1df33b10e41074e2a1e749a20b2cc1bed"
+    },
+    {
+      "file": "garden-ground.mjs",
+      "sha256": "a40407833e66f93a2c2cc7ea8aaacb368327980f829aeeb94453354a0eb4a56b"
+    },
+    {
+      "file": "garden-growth.mjs",
+      "sha256": "d71c6dd04f72644c1c970524619bd5744ade6dcf5f0324f4cac45d848e548873"
+    },
+    {
+      "file": "garden-habitats.css",
+      "sha256": "05644cff8474d086fcb592bb79bd43a3a94e9382f6865ea85ea0680ccc73e06f"
+    },
+    {
+      "file": "garden-home.mjs",
+      "sha256": "e9416b6d7bd6fe0fa4f8029a2d9716339f2fa88ef9093300557e0308701ac19c"
+    },
+    {
+      "file": "garden-insights.mjs",
+      "sha256": "7d19ae9e01d5176491d5a032126c453ccbf06ec95bddddf9c21c0ffe6b4b29c9"
+    },
+    {
+      "file": "garden-life.mjs",
+      "sha256": "f3c55f5d8ca91be906b49b7debd28c9d9303e07640d3b572e2d6f1b5603da11b"
+    },
+    {
+      "file": "garden-lore.mjs",
+      "sha256": "d4b66f9faed385563a9f8b29d8c1dd4103cfd9aef50935773a213e4c1d3f2a2d"
+    },
+    {
+      "file": "garden-panel.css",
+      "sha256": "3d1214767f7e480c5e4bf69bfae7e9e31c0685b6862c32553c0fe4b26eaf00f7"
+    },
+    {
+      "file": "garden-polish.css",
+      "sha256": "815fc61ae14cc04b169c6f9d425535ddd6f2b4fb97a979226344ff903bb66085"
+    },
+    {
+      "file": "garden-prop-atlases.mjs",
+      "sha256": "f06bcbf4626bdba6dc43f28101dbdcca7e509d63e5ae810fe5f912210ceb9d7c"
+    },
+    {
+      "file": "garden-radial.mjs",
+      "sha256": "57c5d2c4a64b7dab8835808e797d0432c3c702e9085b4e3c6c58b1564415fb33"
+    },
+    {
+      "file": "garden-refinements.css",
+      "sha256": "bc3c18f846e4b226b7eb41deea5b4d9f6e217c056dd5048432b0aebc061fb818"
+    },
+    {
+      "file": "garden-root-branches.mjs",
+      "sha256": "eb43c1f3c0ebabdd8c85ec2980860fa496329894321a072f72d0d4c947124f1e"
+    },
+    {
+      "file": "garden-stats.mjs",
+      "sha256": "b082c02d171b35c994631a3f782a641ae23b8b8627138c3218b786634f0381d9"
+    },
+    {
+      "file": "garden-style-atlases.mjs",
+      "sha256": "c1b7c7cc770016f846a1720c4944c0d5c7403797b5d94cd33231927ec7874f09"
+    },
+    {
+      "file": "garden-styles.mjs",
+      "sha256": "e99d9b02962addc14b44eedf0a9afbd323223c66ff1dee521a6cf270028ecff1"
+    },
+    {
+      "file": "garden-v10-preserved.mjs",
+      "sha256": "ef7a86f8d00e9d66d0fdc314fd836f2bf7225523b70656943541b4ac85bced8e"
+    },
+    {
+      "file": "garden-v12.mjs",
+      "sha256": "8ef3401a32a23f5cbf6ef739e382a6afe7c2bbd7939e432e4fe5aaf3d3f4e31b"
+    },
+    {
+      "file": "garden-v16.css",
+      "sha256": "3ec3d276b61b66ff357a2c45aebd20760d50764ea7326b7554d9dd6c76aea0d1"
+    },
+    {
+      "file": "garden-v17.css",
+      "sha256": "d9097c298c198d5242f38d71ae1066e92e0df6c2b7f4e4f1bbbb631822bd6ba7"
+    },
+    {
+      "file": "glass-bubble.mjs",
+      "sha256": "b19456cfe3b3c513a861fbe46c1f501d1fda618fc82dd5511a554ccc169cc0cf"
+    },
+    {
+      "file": "growth-journal.mjs",
+      "sha256": "29d1de22437db6a50fbc934ba040ef35b50629c4ec0f90008b0d4b7f7c58a13f"
+    },
+    {
+      "file": "guided-exploration.css",
+      "sha256": "c5072a115bd553d3f4b3b18b2521698633c8350ec80ef93cc191ca14427723a8"
+    },
+    {
+      "file": "guided-presentation.mjs",
+      "sha256": "e1215deba4901ef1103a6c3bd206217d94ffbe4315927d517adb1bc5399f6866"
+    },
+    {
+      "file": "habitats.mjs",
+      "sha256": "084bff1202743f01d298cb39067b29bba6eeab41e7e8aa2317f3c740fed69630"
+    },
+    {
+      "file": "heat-map.mjs",
+      "sha256": "2fdc4b8c9348f39c23d8fae0137d5f48608828a31e7d697ed0a2e1217f44dafb"
+    },
+    {
+      "file": "journal-navigation.mjs",
+      "sha256": "e5c9ff9e7151cf7817ac9d225b955ae02206894f3819b045e442d185ad323a67"
+    },
+    {
+      "file": "knowledge-fragments.mjs",
+      "sha256": "31409d44f0b9dc65184edfc7a3da43d2620494799011b55d63d3de9684b4c1df"
+    },
+    {
+      "file": "label-layout.mjs",
+      "sha256": "a46f90336c97c4765fbbc9f41c08ebc5d83e949462b3192343a7f185b8cb190b"
+    },
+    {
+      "file": "landmark-atlas.mjs",
+      "sha256": "62d7220d885acd91ff5feca797b57db20e8485cfa9118467ce09c858a65ab480"
+    },
+    {
+      "file": "layout.mjs",
+      "sha256": "b8ffd04e5f6fbf25a7055c37eaf080120d838099d6373132658b126fc818e20c"
+    },
+    {
+      "file": "living-garden-v10.css",
+      "sha256": "cf79d4b7569f45f8bf2025a06bddfc38fddf510bed20f8aa5989f3201a52a70e"
+    },
+    {
+      "file": "logo-picker.mjs",
+      "sha256": "864b5d691181110d805dfde9d52741659c740362610531d3de6b7b02aedbc631"
+    },
+    {
+      "file": "main.mjs",
+      "sha256": "b851815a8adc98e0b1180c2162744f592977e3cca31963b81728411b220e95fc"
+    },
+    {
+      "file": "map-labels.mjs",
+      "sha256": "ea77104604ac0a02d13905180aa9da39b17236968d8c1c491f996355f85765f5"
+    },
+    {
+      "file": "map-presentation.mjs",
+      "sha256": "9c3d9bc0c170bdf7f5665f2e2f5f70bf57d94fb6a3cae4fe907eae334a3d0dcb"
+    },
+    {
+      "file": "model.mjs",
+      "sha256": "9f1b53581bd5b80f34bd13602d42c1dfcf0c5b07fbf4361fc38b866510bc1752"
+    },
+    {
+      "file": "node-atlases.mjs",
+      "sha256": "8477de46a69d10d54382b71e13f53b547716a65427ba3ec5bf0caf3a96f8012b"
+    },
+    {
+      "file": "node-customization.mjs",
+      "sha256": "3e6da098cff16810174658c829a890e1e096e15c64d81c7d1a774f5dbf57b64e"
+    },
+    {
+      "file": "note-presentation.mjs",
+      "sha256": "d1dcd42618301f08b78030b5b279f88eb02b83b9c672890eb7c58e31c9e863d3"
+    },
+    {
+      "file": "paper-surfaces.mjs",
+      "sha256": "bd50e02d652f478ce18bf86c28fa18de9eb88e16312347d91c6b8de3a463af6c"
+    },
+    {
+      "file": "pending-tray.mjs",
+      "sha256": "d32cd51e2e5ea2aeea9cc62f9ef97dfc1bbfcf34716268d8e9f2721b1006e702"
+    },
+    {
+      "file": "platform-icon.mjs",
+      "sha256": "a63a8b3430b4f1d3e8d2c9f509aedaa5865f56ae8a9783bf166dd3b4fbd069fe"
+    },
+    {
+      "file": "preview-layout.mjs",
+      "sha256": "b63f028e203f1fb86a9dbd8a5803aa8b2e771c1c530f35542d39c18dcf0ae5f7"
+    },
+    {
+      "file": "prototype-atlases.mjs",
+      "sha256": "661963712557537cceb10a6641485d8ed29c05a9dc4339cb425c008df3e6c9c9"
+    },
+    {
+      "file": "reader.mjs",
+      "sha256": "5cc297b9a9abef09245682a0be9358f2b5f68758df2abda85141deb6ff102341"
+    },
+    {
+      "file": "reference-atlas.mjs",
+      "sha256": "8a0691d5e43e3b555644d1ec3ec070f05c54d5db5f6ecf3e9a64d58ced52dca3"
+    },
+    {
+      "file": "reference-geometry.mjs",
+      "sha256": "e1a14256e8b694d2ff6a2ffd968fb3aeb61371eefbe17335b3d6bb7f01c018f0"
+    },
+    {
+      "file": "reference-supplements.mjs",
+      "sha256": "a0505889f7720bc9730d5d227529b9286d5e21979da24b5b9a6cdc2210e512c5"
+    },
+    {
+      "file": "region-identity.mjs",
+      "sha256": "c3708c57ab3b8d7561efaa237f19636f3c935d7bfe1ba9a63902a1fd33bf61ed"
+    },
+    {
+      "file": "region-references.mjs",
+      "sha256": "4d47f3097a8e459191145763b881fc98f06a2b390e1245b432819f4724a765f5"
+    },
+    {
+      "file": "related-peeks.mjs",
+      "sha256": "f20c54e4bd0af3987a2ef52a4db090a059eb226e48353e2b9bfd0f6149f5686c"
+    },
+    {
+      "file": "rim-fragments.mjs",
+      "sha256": "927e587158d082323c7239b43bb097a2fff3cd6c7a36afb5d9416f410bc142e7"
+    },
+    {
+      "file": "rim-seeds.mjs",
+      "sha256": "94b2462efb313863b4545c224bb5a52f798c2081bb043b55eecf959cd00a7ee8"
+    },
+    {
+      "file": "ripple-outline.mjs",
+      "sha256": "005b6dcb8b3cd5018f63a31bd6e9c05a3728eca234d63bb994e981dcd06f874e"
+    },
+    {
+      "file": "ripple-outlines-v33.mjs",
+      "sha256": "421a16d0255de0affcd14a4a479b1e9e46631c6495d65a455432357e5d0b481b"
+    },
+    {
+      "file": "root-grafts.mjs",
+      "sha256": "c8c2ad0532a8fd5ad95a2ea04c3333a8a3672bf489e655999397034346a30f46"
+    },
+    {
+      "file": "root-mask.mjs",
+      "sha256": "89f08b3b323346dddab23b19c04c69ef344312644a7f96b6e2a7eb666e9711a4"
+    },
+    {
+      "file": "schema.mjs",
+      "sha256": "b37e9e091e2f92f306947d358e006f0fad789a84e1eb9e84701c7ee9a865871e"
+    },
+    {
+      "file": "source-detail.mjs",
+      "sha256": "276479605cd66c765cb6707d2b9a3755e3a7b45ffc9e01989d47fbba5b5a4016"
+    },
+    {
+      "file": "spacing.mjs",
+      "sha256": "6a201d6939e0697fd6546b2b3e6702950ab5799023d6f827e93847b1d24313ef"
+    },
+    {
+      "file": "style-atmosphere.mjs",
+      "sha256": "d34869ebcde0a6eac728619b496d359f4f0dbb38d3432defa363c7d4c561e676"
+    },
+    {
+      "file": "style-fit-v2.mjs",
+      "sha256": "09d41979d9642fa61887fb1ac91ccd316c81e36afb27a7a8682baaffd1d7950d"
+    },
+    {
+      "file": "style-studies.css",
+      "sha256": "034c2c434498c52dcfd7b95c87f69aa7c6a117eafd2b35c1ab7e346e9ea9f2cf"
+    },
+    {
+      "file": "style-studies.mjs",
+      "sha256": "ac36ca33662c5c3a450616f8e70326ad9fcacda64e9270475e807c1e847b8064"
+    },
+    {
+      "file": "style.css",
+      "sha256": "229e5d1e2444ca897fde90a2f5771fffd808ac3ba089684e7dbe04048ea9d3a3"
+    },
+    {
+      "file": "summary-presentation.mjs",
+      "sha256": "026ed57e18139cede8d0e4a062b90cbc7d4fba3a1f78326cccc5061926596eb0"
+    },
+    {
+      "file": "swarm.mjs",
+      "sha256": "1e676e15eac399a75b805ed716f4425f63d048f7b94ea5f7cd0e9082a1d662ab"
+    },
+    {
+      "file": "topic-habitats.mjs",
+      "sha256": "86928d648b966ff2d8e204415b26d893f6ff14393787e23e92e0a73cf26e25ac"
+    },
+    {
+      "file": "v13.css",
+      "sha256": "1e57a4b2a0adbe88477ea1d599ecfabae5ecd60c5974ca878a03c8faae4955f8"
+    },
+    {
+      "file": "v14.css",
+      "sha256": "24b3bf27cfaf331a59e34cef57a51d1d74fa83620554c7e4a84b2792758172ff"
+    },
+    {
+      "file": "vector-garden-v10-preserved.mjs",
+      "sha256": "f55fef32c80f267d6a1af48b160f553a2fa5bbd1c39c9cfa4313460a12639847"
+    },
+    {
+      "file": "vector-garden.mjs",
+      "sha256": "89acaa0358c99535f2885d257862e9a2510687a9323e60fe674daf3d98379957"
+    },
+    {
+      "file": "vein-layout.mjs",
+      "sha256": "2e6263ca3c71ebbe1939bf1b1455b2427ca43e0bbcbfb23cc6d6a7c90c8ac499"
+    },
+    {
+      "file": "vine.mjs",
+      "sha256": "111106e93436821382322016a2812084846cc471cc83b6f7b87fcae53de0815c"
+    },
+    {
+      "file": "world-scenery.mjs",
+      "sha256": "2c32f01660694b595947b120bcbeb619cff7d85b961c823c39ec216f7a854d8d"
+    }
+  ]
+}

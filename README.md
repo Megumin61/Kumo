@@ -9,7 +9,9 @@ Kumo 是一款以本地文件夹为资料库的网页剪藏工具。浏览器扩
 
 [在线体验双视图花园](https://megumin61.github.io/Kumo/#playground) · [切换全部 11 套真实画风](https://megumin61.github.io/Kumo/#styles) · [浏览器 / AI 插件安装指南](https://megumin61.github.io/Kumo/#start)
 
-官网提供明确标注的虚构示例，可展开领域、主题和帖子，种下模拟收藏、缩放与重置。演示只在当前页面内生效，不连接或写入个人资料库。
+官网直接复用浏览器插件的知识花园、收藏聚落、阅读卡片、搜索、图鉴和外观代码；支持拖动缩放、逐层探索，以及 11 套画风双向同步。内容为 57 篇虚构示例，外观与练习笔记只保存在此网站的浏览器中，不连接个人资料库。
+
+[打开完整产品体验](https://megumin61.github.io/Kumo/product/index.html?sandbox=1) · [演示代码复用说明](docs/DEMO_ARCHITECTURE.md)
 
 
 [![Kumo 一分钟产品演示：网页剪藏、知识花园与 AI 检索](docs/assets/kumo-cover.jpg)](docs/media/kumo-product-demo.mp4)

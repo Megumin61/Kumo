@@ -1,0 +1,33 @@
+.intro{padding:15px 0}.workbench{height:max(600px,calc(100dvh - 230px));max-height:900px}
+.stage{background:radial-gradient(ellipse at 85% 15%,#f3eddb66,transparent 62%),radial-gradient(ellipse at 10% 85%,#e9efdf66,transparent 64%),#fafaf7}
+[data-scheme=cabinet] .stage{background:radial-gradient(ellipse at 80% 12%,#f4ebd566,transparent 58%),#faf9f5}
+.garden-node{cursor:pointer;opacity:var(--reveal,1);transition:opacity .45s ease}
+.garden-node.context{opacity:.23}.garden-node.dragging{cursor:grabbing}.garden-node:focus{outline:none}
+.node-art{transform-box:fill-box;transform-origin:center;transition:transform .3s ease,opacity .4s ease;opacity:.88}
+[data-scheme=glass] .node-art{opacity:.84}
+.garden-node:hover .node-art,.garden-node:focus-visible .node-art{transform:translateY(-2px) scale(1.08);opacity:1}
+.garden-node.source:hover .node-art{transform:scale(1.5)}
+.garden-node.selected .node-art{opacity:1}
+.garden-node .count{font-size:15px;font-weight:750;fill:#415335;dominant-baseline:central;text-anchor:middle;pointer-events:none}
+.garden-node.topic .count{font-size:11px}.garden-node.platform .count{font-size:9px}
+.garden-node .name{font-size:12px;font-weight:750;fill:#435738;text-anchor:middle;paint-order:stroke;stroke:#fafaf7;stroke-width:4px;stroke-linejoin:round}
+.garden-node .shape{stroke-width:.55}.branch-marker{fill:none;stroke:#95a57c;stroke-width:.8}
+.focus-ring{fill:none;stroke:#b3a168;stroke-width:.7;opacity:0;pointer-events:none}
+.selected .focus-ring,.garden-node:focus-visible .focus-ring{opacity:.85}
+.garden-edge{fill:none;stroke:#a6b28e;stroke-width:.9;stroke-linecap:round;opacity:.62;pointer-events:none}
+.garden-edge.relation{stroke:#c2ad72;stroke-width:.85;stroke-dasharray:3 6;opacity:.7}
+.garden-edge.membership{stroke:#b4bea1;stroke-width:.65;opacity:.48}
+.garden-edge.provenance{stroke:#a1b18a;stroke-width:.8;opacity:.52}
+.edge-group{transition:opacity .4s}.edge-group.muted{opacity:.16}.edge-group.traced .garden-edge{opacity:1;stroke:#8e9e68;stroke-width:1.45}
+.edge-hit{stroke-width:12;cursor:pointer}.relation-trigger{cursor:pointer;outline:none}.relation-trigger path{fill:#e4d8ad;stroke:#bca363;stroke-width:.5;opacity:.8;transition:transform .3s;transform-origin:center}
+.relation-trigger:hover path,.relation-trigger:focus-visible path{fill:#d5c284;transform:scale(1.5)}
+#field-host .garden-node.topic .name{display:none}#field-host .garden-node.topic:hover .name,#field-host .garden-node.topic:focus-visible .name{display:block;font-size:10px}
+#field-host .garden-node.topic .count{font-size:8px}#field-host .garden-node.domain .name{font-size:11px}
+#converge-host .garden-node.domain .name{font-size:10px}#converge-host .garden-node .count{font-size:12px}#converge-host .garden-node.platform .name{font-size:10px}
+#tooltip{width:236px;max-height:calc(100% - 14px);overflow:hidden;padding:10px;line-height:1.6;white-space:normal;border-radius:12px;box-shadow:0 7px 28px #4e5b3621;pointer-events:none}
+#tooltip img{width:100%;height:112px;object-fit:cover;border-radius:7px;margin-bottom:7px;background:#f2f1e8;display:block}
+#tooltip strong{font-size:12px;color:#46583a;font-weight:700;line-height:1.65}#tooltip small{display:block;margin-top:4px;font-size:10px;color:#8b896c}
+#tooltip p{font-size:10px;color:#80876f;margin:7px 0 0}#tooltip strong,#tooltip p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.asset-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:22px 0}.asset-pair{border:1px solid #e2e5d9;border-radius:12px;padding:12px;background:#fdfdf8}.asset-pair .pair-art{display:flex;justify-content:center;align-items:center;height:110px;gap:10px}.asset-pair svg{width:90px;height:90px}.asset-pair svg.child{width:48px;height:48px}.asset-pair p{margin:7px 0 0;font-size:11px;color:#7d886e}.scheme-link{display:inline-block;margin-right:12px;padding:8px 14px;border:1px solid #d8ddc8;border-radius:8px;background:#eef1e5;font-size:12px}
+@media(max-width:960px){.asset-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.node-art{transition:none!important;transform:none!important}}

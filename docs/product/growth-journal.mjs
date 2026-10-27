@@ -1,0 +1,15 @@
+import {gardenInsights} from './garden-insights.mjs';
+import {collectionCard} from './collection-cards.mjs';
+import {typeNames} from './model.mjs';
+const el=(tag,text='',cls='')=>{const node=document.createElement(tag);node.textContent=text;node.className=cls;return node;};
+export function createGrowthJournal(host,callbacks){let model,config,selected,shown=8;
+ function draw(nextModel,options={}){if(model!==nextModel||config?.relationType!==options.relationType)shown=8;model=nextModel;config=options;selected=options.selected;const insights=gardenInsights(model),filter=options.relationType||'all';host.replaceChildren();host.classList.add('journal-host');
+  function section(title,note,count){const section=el('section','','journal-section'),heading=el('div','','journal-heading');heading.append(el('h3',title),el('span',String(count)));section.append(heading,el('p',note));host.append(section);return section;}
+  if(['all','bridges'].includes(filter)){const count=insights.bridges.reduce((sum,b)=>sum+b.relations.length,0),area=section('跨领域的桥','把已有材料放在一起，看看它们能互相补充什么。',count);for(const bridge of insights.bridges)for(const relation of bridge.relations){const pair=el('article','','bridge-card'),names=el('p',bridge.name,'bridge-domains');pair.append(names);const cards=el('div','','bridge-pair');cards.append(collectionCard(model,model.records.get(relation.from),options.theme,callbacks.onSelect,{compact:true}),el('span',typeNames[relation.type]||relation.type,'bridge-type'),collectionCard(model,model.records.get(relation.to),options.theme,callbacks.onSelect,{compact:true}));pair.append(cards,el('p',relation.reason,'bridge-reason'));const read=el('button','对照双方依据 ↗','evidence-button');read.dataset.relation=relation.key;read.addEventListener('click',()=>callbacks.onSelect(relation.key));pair.append(read);area.append(pair);}if(!count)area.append(el('p','目前还没有跨主归属领域的联系。'));}
+  if(['all','unlinked'].includes(filter)){const area=section('等待牵线','已有摘要，尚无已记录联系。翻开一篇，寻找下一条线索。',insights.unlinked.length),grid=el('div','','journal-grid');for(const source of insights.unlinked.slice(0,shown))grid.append(collectionCard(model,source,options.theme,callbacks.onSelect));area.append(grid);if(insights.unlinked.length>shown){const more=el('button','继续看看其余 '+(insights.unlinked.length-shown)+' 篇','journal-more');more.addEventListener('click',()=>{const scroll=host.scrollTop;shown+=8;draw(model,config);host.scrollTop=scroll;});area.append(more);}}
+  if(['all','pending'].includes(filter)){const area=section('待细读的新芽','待编译、来源变化或仅有索引的收藏，状态保持原样。',insights.needsReading.length),grid=el('div','','journal-grid');for(const source of insights.needsReading)grid.append(collectionCard(model,source,options.theme,callbacks.onSelect));area.append(grid);if(!insights.needsReading.length)area.append(el('p','当前没有等待补全的材料。'));}
+  select(selected);callbacks.onPositions?.([]);
+ }
+ function select(key){selected=key;for(const card of host.querySelectorAll('[data-source],[data-relation]'))card.classList.toggle('selected',(card.dataset.source||card.dataset.relation)===key);}
+ return {draw,select,zoom(){},dispose(){host.replaceChildren();}};
+}

@@ -1,0 +1,2 @@
+const id=new URL(location.href).searchParams.get('id');
+try{const res=await fetch('./knowledge.json');if(!res.ok)throw Error();const {sources}=await res.json();const s=sources.find(s=>s.id===id);if(!s)throw Error();document.getElementById('title').textContent=s.title;document.getElementById('meta').textContent=s.author+' · 官网虚构示例';for(const p of s.content.split('\n\n')){const e=document.createElement('p');e.textContent=p;document.getElementById('text').append(e);}}catch{document.getElementById('title').textContent='没有找到这份示例，可以返回花园重新选择。';}

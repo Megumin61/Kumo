@@ -1,0 +1,20 @@
+/* Each of the eleven node styles owns one paper canvas. */
+body[data-garden-style]{--garden-paper:var(--style-paper);--core:var(--style-paper);--bubble-ink:var(--style-accent);--bubble-fill:var(--style-paper)}
+body[data-garden-style] .stage{background-color:var(--style-paper)!important;background-image:var(--style-paper-image)!important;background-position:center!important;background-size:var(--style-paper-size,cover)!important;background-repeat:var(--style-paper-repeat,no-repeat)!important}
+body[data-garden-style] .stage::before,body[data-garden-style] .stage::after,body[data-garden-style] .world-bg,body[data-garden-style] .garden-contour,body[data-garden-style] .specimen-tape{display:none!important}
+body[data-garden-style] .garden-patch{fill:var(--colony-color)!important;fill-opacity:var(--colony-fill,.13)!important;stroke:var(--colony-color)!important;stroke-opacity:var(--colony-stroke,.38)!important;stroke-width:var(--colony-width,1.2);filter:none}
+body[data-garden-style] .garden-patch-extension{fill:var(--colony-color);fill-opacity:var(--colony-halo,.06);stroke:none;filter:blur(2.5px);pointer-events:none}
+body[data-garden-style] .node-bubble{filter:none}
+body[data-garden-style] .count-badge circle{fill:var(--style-paper);stroke:var(--style-accent);filter:none;stroke-width:1}
+body[data-garden-style] .count-badge text{fill:var(--style-ink);font-size:10px}
+body[data-garden-style] .focus-ring{stroke:var(--style-accent)!important;stroke-width:1.5!important;stroke-opacity:.65;filter:none}
+body[data-garden-style] .domain-caption rect{fill:var(--style-paper)!important;fill-opacity:.92;stroke:var(--style-accent)!important;stroke-opacity:.18}
+body[data-garden-style] .domain-caption text,body[data-garden-style] .garden-node .name{fill:var(--style-ink)}
+body[data-garden-style] .garden-core .core-ring{stroke:var(--style-accent);stroke-opacity:.2}
+.garden-style-card{background-position:center;background-size:cover}
+.garden-style-card.selected{border-color:var(--style-accent)}
+.style-save-note{font-size:12px;line-height:1.7;color:#7d866e;margin:14px 0}
+body[data-garden-style=camping-pop] .count-badge circle{stroke:#272b24;stroke-width:1.7}
+body[data-garden-style=camping-pop] .domain-caption rect{stroke:#272b24!important;stroke-opacity:.3;stroke-width:1.2}
+body[data-garden-style=field-guide] .garden-patch{stroke-dasharray:6 5}
+body[data-garden-style=colored-scribble] .domain-caption rect{stroke:#419ba5!important}
