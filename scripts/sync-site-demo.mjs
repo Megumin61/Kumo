@@ -2,6 +2,7 @@ import {readFile,writeFile,mkdir,readdir,copyFile,cp} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {build} from 'esbuild';
 // Kept in scripts/sync-site-demo.mjs in the public repository.
 const root=process.argv[2]||path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const source=path.join(root,'browser-extension/garden'),dest=path.join(root,'docs/product');
@@ -42,4 +43,10 @@ for(const [di,d]of fixture.entries()){
 for(const title of ['刚收下的一张灵感卡','还没归类的项目线索','等有空再读的学习笔记']){const id=(++count).toString(16).padStart(24,'0');sources.push({id,title,platform:'web',author:'Kumo 示例作者',capturedAt:'2026-10-26T08:00:00Z',tags:['待整理'],excerpt:'已收藏，等待整理。这是虚构示例。',content:'这份示例还没有编译卡，因此在独立的待编译圈中呈现。',url:'sample.html?id='+id,files:{images:['sample.png']}});}
 await writeFile(path.join(dest,'knowledge.json'),JSON.stringify({demo:true,total:sources.length,revision:'public-demo-v2',sources,nodes,cards,relations:[]},null,2)+'\n');
 await writeFile(path.join(dest,'source-manifest.json'),JSON.stringify({description:'Production files copied byte for byte; endpoint adapter and demo host are the only integration layer.',source:'browser-extension/garden',files:identical},null,2)+'\n');
+// Bundle exact copied modules for delivery; source files remain auditable above.
+await build({stdin:{contents:"import './demo-host.mjs';import './garden-v12.mjs';import './garden-frame.mjs';import './journal-navigation.mjs';",resolveDir:dest,sourcefile:'product-entry.mjs'},bundle:true,format:'esm',target:'es2022',outfile:path.join(dest,'product-app.js'),minify:true,legalComments:'eof'});
+const cssFiles=[...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map(m=>m[1]);
+await writeFile(path.join(dest,'product-app.css'),(await Promise.all(cssFiles.map(f=>readFile(path.join(dest,f),'utf8')))).join('\n'));
+const bundled=html.replace(/<link rel="stylesheet" href="[^"]+">/g,'').replace('</head>','<link rel="stylesheet" href="product-app.css"></head>').replace(/<script type="module" src="[^"]+"><\/script>/g,'').replace('</body>','<script type="module" src="product-app.js"></script></body>');
+for(const name of ['index.html','garden-v16.html'])await writeFile(path.join(dest,name),bundled);
 console.log(JSON.stringify({copiedProductionFiles:identical.length,sources:sources.length,domains:fixture.length,topics:nodes.filter(n=>n.kind==='topic').length}));
