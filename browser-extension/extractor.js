@@ -487,18 +487,20 @@ async function extractKumoPage(pageState = {}) {
 
   const commentSelectors = xhs
     ? ['.comments-container .parent-comment', '.comments-container .comment-item', '#noteContainer [class*="comment-item"]']
-    : [];
-  const commentNodes = commentSelectors.flatMap(selector => [...document.querySelectorAll(selector)]);
+    : bili ? ['.reply-list .reply-item', '#comment .reply-item', 'bili-comment-thread-renderer .reply-item'] : [];
+  const commentNodes = [...new Set(commentSelectors.flatMap(selector => [...document.querySelectorAll(selector)]))];
   const seenComments = new Set();
   const comments = [];
   const authorFollowups = [];
   for (const node of commentNodes) {
     const textNode = node.querySelector('.content, .comment-content, [class*="content"]');
     const text = clean(textNode?.innerText || node.innerText).slice(0, 2000);
-    if (!text || text.length < 2 || seenComments.has(text)) continue;
-    seenComments.add(text);
+    if (!text || text.length < 2) continue;
     const commentAuthorNode = node.querySelector('a[href*="/user/profile/"], .name, .author, [class*="name"]');
     const commentAuthorUrl = absolute(commentAuthorNode?.getAttribute?.('href') || '');
+    const commentKey=(commentAuthorUrl||clean(commentAuthorNode?.innerText))+'\n'+text;
+    if(seenComments.has(commentKey))continue;
+    seenComments.add(commentKey);
     const commentAuthorId = (() => { try { return new URL(commentAuthorUrl).pathname.match(/\/user\/profile\/([^/?#]+)/i)?.[1] || ''; } catch { return ''; } })();
     const likesRaw = clean(node.querySelector('.like-count, [class*="like"]')?.innerText || '');
     const entry = {
@@ -511,8 +513,9 @@ async function extractKumoPage(pageState = {}) {
       isAuthor: Boolean(authorId && commentAuthorId === authorId)
     };
     if (entry.isAuthor) authorFollowups.push({...entry, url: commentAuthorUrl, source: 'author_comment'});
-    if (comments.length < 10) comments.push(entry);
+    if (comments.length < 200) comments.push(entry);
   }
+  comments.sort((a,b)=>(b.likes?.value??-1)-(a.likes?.value??-1)||a.captureOrder-b.captureOrder);
   if (x && authorId) {
     [...document.querySelectorAll('article[data-testid="tweet"]')].forEach(article => {
       if (article === root || article.contains(root) || root.contains(article)) return;

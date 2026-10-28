@@ -2,6 +2,24 @@
   let values = [], useBridge = false, offline = false;
   const selected = new Set();
   let expanded=false,observed=false,initialized=false,unclassifiedCount=null;
+  const recentKey='kumo-last-saved-tag';
+  function orderTags(tags, recent) { return [...tags].sort((a,b)=>Number(b.id===recent)-Number(a.id===recent)||(Number(b.count)||0)-(Number(a.count)||0)); }
+  function recordSaved(tags){if(tags?.[0]?.id)localStorage.setItem(recentKey,tags[0].id);}
+  async function inferRecent(tags) {
+    let offset=0, latest=null;
+    const visible=new Set(tags.filter(tag=>!tag.hidden).map(tag=>tag.id));
+    do {
+      const page=await KumoBridge.library({offset,limit:200});
+      for(const item of page.items||[]) {
+        const id=item.userTags?.find(tag=>visible.has(tag.id))?.id;
+        const captured=Date.parse(item.capturedAt||'');
+        if(id && Number.isFinite(captured) && (!latest || captured>latest.time)) latest={id,time:captured};
+      }
+      const count=(page.items||[]).length; offset+=count;
+      if(!count || offset>=page.total) break;
+    } while(true);
+    return latest?.id || null;
+  }
   function selectionLabel(){const label=document.querySelector('section[aria-label="用户标签"] .note-label'),tag=values.find(value=>selected.has(value.id));if(label){label.textContent='标签 · '+(tag?.label||'未分类');label.title=tag?.label||'未分类';}}
   function closeChooser(){expanded=false;document.getElementById('tag-list').classList.remove('expanded');selectionLabel();measure();}
   function setupChooser(list){
@@ -21,10 +39,12 @@
     else if (!offline&&localStorage.getItem('kumo-tags') === null) localStorage.setItem('kumo-tags',JSON.stringify(KumoUI.presetCollections.map((label,index)=>({id:'kumo-preset-'+index,label}))));
     if(connected){const overview=await KumoBridge.tags();values=overview.tags;unclassifiedCount=overview.unclassifiedCount??null;}
     else{values=JSON.parse(localStorage.getItem(offline?'kumo-bridge-tags-cache':'kumo-tags')||'[]');unclassifiedCount=null;}
-    values.sort((first,second)=>(second.count||0)-(first.count||0));
+    let recent=localStorage.getItem(recentKey);
+    if(connected&&!values.some(tag=>!tag.hidden&&tag.id===recent)){recent=await inferRecent(values).catch(()=>null);if(recent)localStorage.setItem(recentKey,recent);}
+    values=orderTags(values,recent);
     if(connected)localStorage.setItem('kumo-bridge-tags-cache',JSON.stringify(values));
-    for(const id of selected)if(!values.some(tag=>tag.id===id))selected.delete(id);
-    if(!initialized){selected.clear();initialized=true;}
+    for(const id of selected)if(!values.some(tag=>tag.id===id&&!tag.hidden))selected.delete(id);
+    if(!initialized){selected.clear();const first=values.find(tag=>!tag.hidden);if(first){selected.add(first.id);initialized=true;}}
     const list = document.getElementById('tag-list'); list.replaceChildren();
     setupChooser(list);
     for (const tag of values.filter(tag => !tag.hidden)) {
@@ -40,7 +60,7 @@
       remove.onclick=async()=>{if(!confirm('删除“'+tag.label+'”？收藏内容保留，仅移除这个标签的归属。'))return;remove.disabled=true;try{if(useBridge)await KumoBridge.updateTag({action:'delete',id:tag.id});else{values=values.filter(t=>t.id!==tag.id);localStorage.setItem('kumo-tags',JSON.stringify(values));}selected.delete(tag.id);await load(useBridge,{bridgeExpected:offline});document.dispatchEvent(new Event('kumo-annotation-change'));}catch(error){remove.disabled=false;document.dispatchEvent(new CustomEvent('kumo-tags-error',{detail:error.message}));}};
       wrap.append(button,remove);list.append(wrap);
     }
-const unclassified=document.createElement('button');unclassified.type='button';unclassified.className='chip';unclassified.dataset.unclassified='true';unclassified.textContent='未分类';const count=document.createElement('span');count.className='tag-count';count.textContent=unclassifiedCount??'—';unclassified.append(count);unclassified.setAttribute('aria-pressed',String(selected.size===0));unclassified.onclick=()=>{selected.clear();list.querySelectorAll('.chip').forEach(node=>node.setAttribute('aria-pressed',String(node===unclassified)));closeChooser();document.dispatchEvent(new Event('kumo-annotation-change'));};list.append(unclassified);selectionLabel();requestAnimationFrame(measure);
+const unclassified=document.createElement('button');unclassified.type='button';unclassified.className='chip';unclassified.dataset.unclassified='true';unclassified.textContent='未分类';const count=document.createElement('span');count.className='tag-count';count.textContent=unclassifiedCount??'—';unclassified.append(count);unclassified.setAttribute('aria-pressed',String(selected.size===0));unclassified.onclick=()=>{initialized=true;selected.clear();list.querySelectorAll('.chip').forEach(node=>node.setAttribute('aria-pressed',String(node===unclassified)));closeChooser();document.dispatchEvent(new Event('kumo-annotation-change'));};list.append(unclassified);selectionLabel();requestAnimationFrame(measure);
   }
   async function add(label) {
     if(offline)throw new Error('资料库未连接，请恢复连接后再添加标签。');
@@ -55,5 +75,6 @@ const unclassified=document.createElement('button');unclassified.type='button';u
     selected.clear(); selected.add(tag.id); await load(useBridge);
     document.dispatchEvent(new Event('kumo-annotation-change'));
   }
-  scope.KumoTags = {load, add, selected: () => values.filter(tag => selected.has(tag.id)).map(({id, label}) => ({id, label}))};
+  async function select(ids){selected.clear();for(const id of ids||[])if(values.some(tag=>tag.id===id&&!tag.hidden))selected.add(id);initialized=true;await load(useBridge,{bridgeExpected:offline});}
+  scope.KumoTags = {load, add, select, recordSaved, orderTags, inferRecent, selected: () => values.filter(tag => selected.has(tag.id)).map(({id, label}) => ({id, label}))};
 })(globalThis);

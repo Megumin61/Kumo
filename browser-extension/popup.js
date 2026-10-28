@@ -20,7 +20,7 @@ const progressEl = document.getElementById('progress');
 const progressLabelEl = document.getElementById('progress-label');
 const progressTimeEl = document.getElementById('progress-time');
 const progressDetailEl = document.getElementById('progress-detail');
-document.getElementById('app-version').textContent = `v${chrome.runtime.getManifest().version}`;
+document.getElementById('app-version').textContent = globalThis.KumoQuickWorker?'':`v${chrome.runtime.getManifest().version}`;
 const refreshSelects=new Map();
 document.querySelectorAll('select:not([hidden])').forEach(control=>refreshSelects.set(control,KumoUI.select(control)));
 const settingsEntry=document.getElementById('settings-open');settingsEntry.prepend(KumoUI.icon('gear'));settingsEntry.append(KumoUI.icon('chevron'));
@@ -78,6 +78,28 @@ let progressTimer = null;
 let frameFile = null;
 let completeSaved = false;
 let targetEpoch=0;
+const quickSilent=Boolean(globalThis.KumoQuickWorker)||new URLSearchParams(location.search).get('silent')==='1';
+const quickParam=name=>globalThis.KumoQuickWorker?.params?.[name]??new URLSearchParams(location.search).get(name);
+let saveInitiated=false, quickHandled=false;
+async function closeQuick() {
+  if(globalThis.KumoQuickWorker){await globalThis.KumoQuickWorker.finish();return;}
+  try { const current=await chrome.tabs.getCurrent(); if(current?.id)await chrome.tabs.remove(current.id); else window.close(); }
+  catch(error) { console.error('无法关闭后台剪藏',error); }
+}
+async function revealQuick(message='收藏未完成，请打开 Kumo 重试',kind='error') {
+  if(!quickSilent || quickHandled) return;
+  quickHandled=true;
+  try { await KumoQuickFeedback.show(activeTabId,message,kind); }
+  catch(error) { console.error('无法显示收藏状态',error); if(activeTabId)await chrome.action.setBadgeText({tabId:activeTabId,text:'!'}).catch(()=>{}); }
+  await closeQuick();
+}
+async function finishQuick(message='收藏完成') {
+  if(!quickSilent || quickHandled) return;
+  quickHandled=true;
+  try { await KumoQuickFeedback.show(activeTabId,message); await chrome.action.setBadgeText({tabId:activeTabId,text:''}); }
+  catch(error) { console.error('无法显示收藏提示',error); }
+  await closeQuick();
+}
 for(const [id,label] of [['claude','Claude Code'],['qoder','Qoder']])TARGETS[id]={...TARGETS.generic,id,label,rootLabel:label+' 项目资料文件夹'};
 const preferences=KumoDestination.options(localStorage);
 screenshotEl.checked=preferences.screenshot;downloadImagesEl.checked=preferences.images;downloadVideoEl.checked=preferences.video;commentCountEl.value=String(preferences.comments);refreshSelects.get(commentCountEl)?.();
@@ -109,6 +131,7 @@ async function followVideoJob(jobId) {
   } catch (error) {
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
+    void revealQuick('无法查询收藏进度，请打开 Kumo 查看','warning');
     setStatus(`无法查询后台任务：${error.message}。重新打开插件可查看；正文已保留。`, 'warning');
     saveEl.disabled = false;
     targetEl.disabled = false;
@@ -172,6 +195,8 @@ function updateProgress(value, label, detail = '') {
 }
 
 function finishProgress(complete = true) {
+  if(saveInitiated && complete) KumoTags.recordSaved(clip?.userTags);
+  if(quickSilent && saveInitiated) { if(complete) void finishQuick(); else void revealQuick('正文已保存，部分媒体未完成','warning'); }
   if (progressTimer) clearInterval(progressTimer);
   progressTimer = null;
   progressTimeEl.textContent = `${Math.max(0, Math.round((Date.now() - progressStartedAt) / 1000))} 秒`;
@@ -204,7 +229,8 @@ function updateFolder(handle) {
 
 async function loadPage() {
   try {
-    const sourceId=new URLSearchParams(location.search).get('sourceTabId');
+    if(globalThis.KumoQuickWorker)await globalThis.KumoQuickWorker.ready;
+    const sourceId=String(quickParam('sourceTabId')||'');
     const tab=sourceId && /^\d+$/.test(sourceId) ? await chrome.tabs.get(Number(sourceId)) : (await chrome.tabs.query({active: true, currentWindow: true}))[0];
     if (!tab?.id || !/^https?:/i.test(tab.url || '')) throw new Error('请从网页点击 Kumo 图标，或按 Alt+Shift+K 打开。');
     activeWindowId = tab.windowId;
@@ -235,22 +261,35 @@ async function loadPage() {
     const typeLabel = CONTENT_TYPE_LABELS[clip.contentType] || '网页';
     const videos = clip.stats.videos ? ` · 视频 ${clip.stats.videos} 个` : '';
     const gallery = clip.stats.expectedGalleryMedia ? ` · 图集 ${clip.stats.foundGalleryMedia}/${clip.stats.expectedGalleryMedia}` : '';
-    previewEl.textContent = `${typeLabel} · 正文 ${clip.stats.characters} 字 · 图片 ${clip.stats.images} 张${videos}${gallery}${selection}`;
+    const comments=commentCountEl.value==='0'?'':` · 已加载评论 ${clip.comments?.length||0} 条`;
+    previewEl.textContent = `${typeLabel} · 正文 ${clip.stats.characters} 字 · 图片 ${clip.stats.images} 张${videos}${gallery}${comments}${selection}`;
     updateSavePlan();
     setStatus(clip.warnings.length ? '内容可能不完整' : '准备保存', clip.warnings.length ? 'warning' : '');
     await loadTarget();
     saveEl.disabled = false;
+    if(usingBridge()&&bridgeStatus?.capabilities?.includes('library_browser')){
+      let existing;
+      try{existing=await KumoDuplicate.find(clip,KumoBridge,KumoStorage);}catch(error){setStatus('检查收藏状态失败，请检查本地资料库连接。','warning');saveEl.disabled=true;void revealQuick('无法检查收藏，请检查资料库连接','warning');return;}
+      if(existing){
+        if(quickParam('quick')==='1'){setStatus('已经收藏，无需重复保存。','success');void finishQuick('已经收藏过');return;}
+        await KumoTags.select((existing.userTags||[]).map(tag=>tag.id));
+        noteEl.value=existing.userNote||'';document.getElementById('note-count').textContent=noteEl.value.length;
+        completeSaved=true;saveEl.textContent='已收藏';saveEl.disabled=true;
+        setStatus('已经收藏，可修改笔记或标签。','success');return;
+      }
+    }
     const previousJob = [...(bridgeStatus?.activeJobs || [])].reverse().find(job => job.url === clip.url);
-    if (previousJob&&usingBridge()) void followVideoJob(previousJob.id);
-    else if(new URLSearchParams(location.search).get('quick')==='1'){
+    if (previousJob&&usingBridge()&&quickParam('quick')!=='1') void followVideoJob(previousJob.id);
+    else if(quickParam('quick')==='1'){
       const ready=usingBridge()||locationModeEl.value==='downloads'||directoryHandle&&await directoryHandle.queryPermission({mode:'readwrite'})==='granted';
-      if(!ready){setStatus('先设置保存文件夹，再使用一键剪藏。','warning');saveOptions.hidden=false;return;}
+      if(!ready){setStatus('先设置保存文件夹，再使用一键剪藏。','warning');saveOptions.hidden=false;void revealQuick('请先打开 Kumo 设置保存位置','warning');return;}
       const media=usingBridge()&&clip.platformId==='x'?[]:[...(downloadImagesEl.checked?clip.images||[]:[]),...(downloadVideoEl.checked?clip.videos||[]:[])];
       const origins=[...new Set(media.map(m=>{try{return new URL(m.url).origin+'/*';}catch{return '';}}).filter(v=>/^https?:/.test(v)))];
-      if(origins.length&&!await chrome.permissions.contains({origins})){setStatus('首次保存此来源需授权媒体读取，请点击嚼一嚼确认。','warning');return;}
+      if(origins.length&&!await chrome.permissions.contains({origins})){setStatus('首次保存此来源需授权媒体读取，请点击嚼一嚼确认。','warning');void revealQuick('请打开 Kumo 授权后收藏','warning');return;}
       void save();
     }
   } catch (error) {
+    void revealQuick('无法读取当前网页，请打开 Kumo 重试');
     eyebrowEl.textContent = '无法读取';
     setStatus(error.message || String(error), 'error');
     await loadTarget().catch(()=>{});
@@ -284,6 +323,7 @@ async function chooseFolder() {
 async function screenshotBlob() {
   if (!screenshotEl.checked || typeof activeWindowId !== 'number') return null;
   try {
+    if(quickSilent){const [visible]=await chrome.tabs.query({active:true,windowId:activeWindowId});if(visible?.id!==activeTabId)return null;}
     const dataUrl = await chrome.tabs.captureVisibleTab(activeWindowId, {format: 'png'});
     return await (await fetch(dataUrl)).blob();
   } catch {
@@ -400,7 +440,7 @@ async function resolveXVideoFromCurrentPage(pageUrl, mediaIds) {
     target: {tabId: activeTabId},
     world: 'MAIN',
     args: [pageUrl],
-    func: async expectedUrl => {
+    func: async function fetchXPage(expectedUrl) {
       if (new URL(location.href).pathname !== new URL(expectedUrl).pathname) throw new Error('active_tab_changed');
       const response = await fetch(location.href, {credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(15000)});
       if (!response.ok) throw new Error(`x_page_http_${response.status}`);
@@ -414,11 +454,12 @@ async function resolveXVideoFromCurrentPage(pageUrl, mediaIds) {
 
 async function save() {
   if (!clip) return;
+  saveInitiated=true;
   if(!usingBridge()&&!directoryHandle&&locationModeEl.value!=='downloads'){
-    if(locationModeEl.value==='auto'){setStatus('本地资料库未连接。可选择资料文件夹继续保存。','warning');saveOptions.hidden=false;return;}
+    if(locationModeEl.value==='auto'){setStatus('本地资料库未连接。可选择资料文件夹继续保存。','warning');saveOptions.hidden=false;void revealQuick();return;}
     const picked=await chooseFolder();if(!picked)return;
   }
-  if(!usingBridge()&&directoryHandle&&locationModeEl.value!=='downloads'&&!await KumoStorage.ensurePermission(directoryHandle)){setStatus('目录授权已失效，请在保存设置中重新选择。','warning');saveOptions.hidden=false;return;}
+  if(!usingBridge()&&directoryHandle&&locationModeEl.value!=='downloads'&&!await KumoStorage.ensurePermission(directoryHandle)){setStatus('目录授权已失效，请在保存设置中重新选择。','warning');saveOptions.hidden=false;void revealQuick();return;}
   const note = noteEl.value;
   noteEl.disabled = true;
   clip.userTags = KumoTags.selected();
@@ -564,7 +605,7 @@ async function save() {
       }
     } else {
       updateProgress(90, '正在写入下载目录', `${files.length} 个文件`);
-      for (const file of files) await KumoStorage.downloadFile(`Kumo-Inbox/${profile.id}/${folderName}/${file.name}`, file.content, file.type);
+      for (const file of files) await KumoStorage.downloadFile(`Kumo-Inbox/${profile.id}/${folderName}/${file.name}`, file.content, file.type,{waitForCompletion:quickSilent});
       setStatus(`${mediaOutcome.incomplete ? '已保存正文，媒体未完整' : '已保存到下载内容'}：Kumo-Inbox/${profile.id}/${folderName}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
       saveEl.textContent = mediaOutcome.incomplete ? '重试媒体' : '已保存';
     }
@@ -574,6 +615,7 @@ async function save() {
   } catch (error) {
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
+    void revealQuick();
     if (error?.name === 'AbortError') setStatus('已取消保存。');
     else setStatus(error.message || String(error), 'error');
     saveEl.disabled = false;

@@ -1,7 +1,8 @@
 /* Keep the new-label action visible even when the collection strip is full. */
-body{width:410px;height:590px}
+body{width:410px;height:480px}
+body:has(#video-focus:not([hidden])){height:520px}
 main{gap:7px;padding:14px 18px}
-.note-wrap{flex:1 0 82px;min-height:82px}
+.note-wrap{flex:0 0 64px;min-height:64px}
 #note{resize:none;overflow-y:auto;padding:10px 12px 18px}
 header .custom-select{width:108px}
 header .select-trigger{border:1px solid #dcd7cd;background:#f9f7f2;border-radius:8px;padding:5px 9px;font-size:12px;min-height:30px}
@@ -9,7 +10,7 @@ header .select-trigger{white-space:nowrap;gap:5px;font-size:11px}
 header .select-trigger .icon{width:14px;height:14px}
 #status{max-height:64px;overflow-y:auto;overflow-wrap:anywhere}
 #destination-open{white-space:nowrap;font-size:12px;padding:5px 10px}
-@media(max-height:540px){body{height:510px}main{gap:5px}.note-wrap{flex-basis:72px;min-height:72px}}
+@media(max-height:500px){body{height:480px}main{gap:5px}.note-wrap{flex-basis:58px;min-height:58px}}
 .tag-row{overflow:visible;min-width:0;align-items:flex-start}
 main{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
 main>section[aria-label="用户标签"]{flex:none}

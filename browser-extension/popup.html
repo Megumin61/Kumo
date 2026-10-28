@@ -60,9 +60,9 @@
       <label class="check"><input id="download-video" type="checkbox"> 下载完整视频（可选，可能耗时较长）</label>
       <label class="option-row" for="comment-count"><span>讨论快照</span>
         <select id="comment-count">
-          <option value="0" selected>不保存评论</option>
-          <option value="5">前 5 条已加载评论</option>
-          <option value="10">前 10 条已加载评论</option>
+          <option value="0">不保存评论</option>
+          <option value="5">已加载评论中优先保存高赞 5 条</option>
+          <option value="10" selected>已加载评论中优先保存高赞 10 条</option>
         </select>
       </label>
 
@@ -85,8 +85,10 @@
   <script src="source-links.js"></script><script src="format.js"></script>
   <script src="media.js"></script>
   <script src="storage.js"></script>
+  <script src="duplicate-check.js"></script>
   <script src="bridge.js"></script>
   <script src="tags.js"></script>
+  <script src="quick-feedback.js"></script>
   <script src="ui.js"></script>
 <script src="library-panel.js"></script><script src="destination.js"></script><script src="shortcuts.js"></script><script src="popup.js"></script>
 <script type="module" src="brand-sync.mjs"></script></body>

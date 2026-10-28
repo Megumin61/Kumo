@@ -1,4 +1,4 @@
-# Kumo 浏览器扩展 0.18.1
+# Kumo 浏览器扩展 0.18.7
 
 把用户主动选择的网页、来源、图片和笔记保存到本地目录。当前界面以简体中文为主，支持 Chromium / Microsoft Edge。
 
@@ -14,7 +14,7 @@ Windows 默认 Ctrl+Q 快速剪藏；实际键位可在“保存设置 → 快�
 
 ## 发布状态
 
-0.18.1 包含快捷剪藏设置与原文链接修复。商店审核与本地分发分别进行，最新状态见[发布说明](https://github.com/Megumin61/Kumo/blob/main/docs/PUBLISHING.md)。
+0.18.7 优化收藏面板、平台标识、重复收藏检查与已加载评论的保存。商店审核与本地分发分别进行，最新状态见[发布说明](https://github.com/Megumin61/Kumo/blob/main/docs/PUBLISHING.md)。
 
 - [产品介绍](https://kumo-clip-jayce.ximisapa.chatgpt.site/)
 - [隐私政策](https://kumo-clip-jayce.ximisapa.chatgpt.site/privacy)

@@ -214,14 +214,24 @@
     return {duplicate: false, area: 'inbox', folderName};
   }
 
-  async function downloadFile(path, content, type) {
+  async function downloadFile(path, content, type, {waitForCompletion=false}={}) {
     const url = URL.createObjectURL(content instanceof Blob ? content : new Blob([content], {type}));
     try {
-      await chrome.downloads.download({url, filename: path, saveAs: false, conflictAction: 'uniquify'});
+      const id=await chrome.downloads.download({url, filename: path, saveAs: false, conflictAction: 'uniquify'});
+      if(waitForCompletion&&globalThis.KumoQuickWorker){
+        const deadline=Date.now()+120000;
+        while(true){const [item]=await chrome.downloads.search({id});if(item?.state==='complete')break;if(!item||item.state==='interrupted')throw new Error('下载未完成');if(Date.now()>deadline)throw new Error('下载超时');await new Promise(resolve=>setTimeout(resolve,250));}
+      } else if(waitForCompletion)await new Promise((resolve,reject)=>{
+        const finish=(error)=>{clearTimeout(timer);chrome.downloads.onChanged.removeListener(changed);error?reject(new Error(error)):resolve();};
+        const changed=delta=>{if(delta.id===id&&delta.state?.current==='complete')finish();else if(delta.id===id&&delta.state?.current==='interrupted')finish('下载未完成');};
+        const timer=setTimeout(()=>finish('下载超时'),120000);
+        chrome.downloads.onChanged.addListener(changed);
+        chrome.downloads.search({id}).then(([item])=>{if(item?.state==='complete')finish();else if(!item||item.state==='interrupted')finish('下载未完成');}).catch(error=>finish(error.message));
+      });
     } finally {
       setTimeout(() => URL.revokeObjectURL(url), 30000);
     }
   }
 
-  scope.KumoStorage = {getHandle, pickDirectory, ensurePermission, initializeLibrary, writeClip, downloadFile};
+  scope.KumoStorage = {getHandle, pickDirectory, ensurePermission, initializeLibrary, writeClip, downloadFile,sourceKeyFromUrl,safeComparableUrl};
 })(globalThis);

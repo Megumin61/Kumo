@@ -3,7 +3,10 @@
   const contentKeywords = values => [...new Set((Array.isArray(values)?values:[]).filter(value=>typeof value==='string'&&value.trim()).map(value=>value.trim()))].slice(0,3);
   function platform(mark, name = '网页') {
     const value = String(name); const lower = value.toLowerCase();
-    mark.textContent = /^(x|twitter)$/i.test(value) ? '𝕏' : lower.includes('小红书') ? '小红书' : lower.includes('公众号') || lower.includes('wechat') ? '●●' : lower.includes('b站') || lower.includes('bilibili') ? 'B站' : lower.includes('youtube') ? '▶' : lower.includes('抖音') || lower.includes('tiktok') ? '♪' : '↗';
+    const brand=lower.includes('github')?'github':lower.includes('pinterest')?'pinterest':lower.includes('b站')||lower.includes('bilibili')?'bilibili':lower.includes('小红书')||lower.includes('xiaohongshu')?'xiaohongshu':/^(x|twitter)$/i.test(value)?'x':lower.includes('公众号')||lower.includes('wechat')?'wechat':lower.includes('抖音')||lower.includes('douyin')?'douyin':lower.includes('tiktok')?'tiktok':lower.includes('youtube')?'youtube':'';
+    if(brand){const img=document.createElement('img');img.alt='';img.src='assets/platforms/app/'+brand+'.jpg';mark.replaceChildren(img);mark.dataset.platform=brand;mark.dataset.appIcon='true';mark.setAttribute('aria-label',value);return;}
+    delete mark.dataset.appIcon;
+    mark.textContent = '↗';
     mark.dataset.platform = /^(x|twitter)$/i.test(value) ? 'x' : lower.includes('小红书') ? 'xhs' : 'other'; mark.setAttribute('aria-label', value);
   }
   function timeGroup(value, now = new Date()) {

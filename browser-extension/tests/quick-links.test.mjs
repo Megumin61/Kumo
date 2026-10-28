@@ -40,21 +40,23 @@ test('shortcut settings reflect assigned/unassigned browser commands rather than
   assert.equal(Shortcuts.shortcutPage('Mozilla Edg/140'),'edge://extensions/shortcuts');
   assert.equal(Shortcuts.shortcutPage('Mozilla Chrome/140'),'chrome://extensions/shortcuts');
 });
-test('quick command captures the originating tab and falls back to a window retaining quick mode',async()=>{
-  for(const failPopup of [false,true]){
-    let handler;const popups=[],windows=[];
+test('quick command starts an offscreen document without opening tabs or windows',async()=>{
+  for(const failStart of [false,true]){
+    let handler;const popups=[],tabs=[],windows=[],badges=[],documents=[],tips=[];
     const chrome={
-      action:{setPopup:async x=>popups.push(x),enable:async()=>{},openPopup:async()=>{if(failPopup)throw Error('unsupported');},onClicked:{addListener(){}}},
-      sidePanel:{setOptions:async()=>{}},tabs:{query:async()=>{throw Error('must use event tab');}},
-      runtime:{onInstalled:{addListener(){}},onStartup:{addListener(){}},onMessage:{addListener(){}},getURL:p=>'chrome-extension://test/'+p},
+      action:{setPopup:async x=>popups.push(x),enable:async()=>{},openPopup:async()=>{},setBadgeText:async x=>badges.push(x),onClicked:{addListener(){}}},
+      sidePanel:{setOptions:async()=>{}},tabs:{query:async()=>{throw Error('must use event tab');},create:async x=>tabs.push(x)},
+      runtime:{onInstalled:{addListener(){}},onStartup:{addListener(){}},onMessage:{addListener(){}},getURL:p=>'chrome-extension://test/'+p,getContexts:async()=>[],sendMessage:async()=>({ok:true})},
+      offscreen:{createDocument:async x=>{documents.push(x);if(failStart)throw Error('unsupported');},closeDocument:async()=>{}},
       commands:{onCommand:{addListener:f=>handler=f}},windows:{create:async x=>windows.push(x)}
     };
-    vm.runInNewContext(await readFile(new URL('../background.js',import.meta.url),'utf8'),{chrome,console,setTimeout,clearTimeout});
+    const context={chrome,console,setTimeout,clearTimeout,importScripts(){},readKumoPageState(){},extractKumoPage(){},captureKumoVideoFrame(){},KumoQuickFeedback:{show:async (...args)=>tips.push(args),showInPage(){}}};
+    vm.runInNewContext(await readFile(new URL('../background.js',import.meta.url),'utf8'),context);
     handler('kumo-save',{id:42,windowId:7});
     await new Promise(resolve=>setImmediate(resolve));
-    assert.ok(popups.some(x=>x.tabId===42&&/quick=1&sourceTabId=42&sourceWindowId=7/.test(x.popup)));
-    assert.equal(windows.length,failPopup?1:0);
-    if(failPopup)assert.match(windows[0].url,/sourceTabId=42&sourceWindowId=7&quick=1/);
+    assert.equal(documents[0].url,'quick-worker.html');
+    assert.equal(tabs.length,0);assert.equal(windows.length,0);assert.equal(popups.some(x=>x.tabId===42),false);
+    assert.equal(tips[0][1],'开始收藏…');if(failStart)assert.equal(tips[1][2],'error');
   }
 });
 
