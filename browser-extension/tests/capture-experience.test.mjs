@@ -49,24 +49,24 @@ test('a later reconnect selects the first available label after an empty initial
   await f.api.load(true);assert.equal(f.api.selected()[0].id,'later');
 });
 test('quick-save feedback animates in, fades out and removes itself',async()=>{
-  let removed=false,delay,host,box,style;const classes=[];
-  const make=tag=>({tag,dataset:{},classList:{add:name=>classes.push(name)},style:{},children:[],setAttribute(name,value){this[name]=value;},append(...parts){this.children.push(...parts);},attachShadow(){return {append(css,node){style=css;box=node;}};},remove(){removed=true;}});
+  let removed=false,delay,host,box,style,sparks;const classes=[];
+  const make=tag=>({tag,dataset:{},classList:{add:name=>classes.push(name)},style:{},children:[],setAttribute(name,value){this[name]=value;},append(...parts){this.children.push(...parts);},attachShadow(){return {append(...nodes){if(nodes.length===2)[style,box]=nodes;else sparks=nodes[0];}};},remove(){removed=true;}});
   const document={getElementById:()=>null,createElement:make,body:{append(node){host=node;}}};
   const ctx={document,setTimeout:(fn,ms)=>{delay=ms;ctx.expire=fn;}};
   vm.runInNewContext(await readFile(new URL('../quick-feedback.js',import.meta.url),'utf8'),ctx);
   ctx.KumoQuickFeedback.showInPage(null,'收藏完成');
   assert.equal(host.id,'kumo-quick-feedback');assert.match(host.style.cssText,/left:50%/);assert.match(host.style.cssText,/bottom:9%/);
   assert.equal(box.children[0].textContent,'K');assert.equal(box.children[1].textContent,'收藏完成');assert.equal(delay,1800);
-  assert.match(style.textContent,/kumo-in/);assert.match(style.textContent,/prefers-reduced-motion/);
+  assert.match(style.textContent,/kumo-in/);assert.match(style.textContent,/prefers-reduced-motion/);assert.match(box.style.cssText,/backdrop-filter:blur/);assert.doesNotMatch(box.style.cssText,/gradient/);assert.equal(sparks.children.length,3);assert.equal(sparks['aria-hidden'],'true');
   ctx.expire();assert.deepEqual(classes,['kumo-out']);assert.equal(delay,200);assert.equal(removed,false);
   ctx.expire();assert.equal(removed,true);
 });
 test('progress, warning and error tips have distinct colors and durations',async()=>{
   let box,delay;
-  const make=()=>({dataset:{},style:{},children:[],setAttribute(){},append(...parts){this.children.push(...parts);},attachShadow(){return {append(_css,node){box=node;}};},remove(){}});
+  const make=()=>({dataset:{},style:{},children:[],setAttribute(){},append(...parts){this.children.push(...parts);},attachShadow(){return {append(...nodes){if(nodes.length===2)box=nodes[1];}};},remove(){}});
   const ctx={document:{getElementById:()=>null,createElement:make,body:{append(){}}},setTimeout:(_fn,ms)=>{delay=ms;}};
   vm.runInNewContext(await readFile(new URL('../quick-feedback.js',import.meta.url),'utf8'),ctx);
-  for(const [kind,color,time] of [['progress','#4c6572',3000],['warning','#8c6c34',4500],['error','#985648',4500]]){
+  for(const [kind,color,time] of [['progress','#4d707e',3000],['warning','#907037',4500],['error','#995a4d',4500]]){
     ctx.KumoQuickFeedback.showInPage(null,'提示',kind);assert.ok(box.style.cssText.includes(color));assert.equal(delay,time);
   }
 });

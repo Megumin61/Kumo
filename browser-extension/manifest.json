@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kumo 网页剪藏",
-  "version": "0.18.7",
+  "version": "0.18.8",
   "description": "收藏网页、阅读笔记，并用森系知识花园探索本地资料。知识地图与收藏列表需连接 Kumo 本地资料库。",
   "permissions": [
     "activeTab",
@@ -56,5 +56,5 @@
     },
     "default_popup": "popup.html"
   },
-  "version_name": "0.18.7 · 收藏提示配色"
+  "version_name": "0.18.8 · 玻璃星光提示"
 }
