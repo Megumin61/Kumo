@@ -1,6 +1,6 @@
 {
   "name": "kumo",
-  "version": "0.18.1",
+  "version": "0.18.15",
   "private": true,
   "description": "Clip Everything",
   "engines": {
@@ -9,6 +9,7 @@
   "scripts": {
     "setup": "npm ci --prefix plugins/kumo/src/mcp --ignore-scripts",
     "helper": "node local-bridge/start-helper.mjs",
+    "capture": "node scripts/kumo-capture.mjs",
     "test": "node --test browser-extension/tests/*.test.mjs local-bridge/tests/*.test.mjs plugins/kumo/src/mcp/tests/*.test.mjs",
     "check": "node scripts/check-distribution.mjs",
     "package": "python scripts/package.py"

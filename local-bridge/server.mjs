@@ -11,6 +11,7 @@ import {randomUUID} from 'node:crypto';
 import {createLibrary} from './library.mjs';
 import {createEvidenceLibrary} from '../plugins/kumo/src/mcp/library.mjs';
 import {sourceSnapshot} from '../plugins/kumo/src/mcp/snapshot.mjs';
+import {createPageCapture} from './capture.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PORT = 43789;
@@ -77,7 +78,7 @@ async function findExisting(libraryRoot, clip) {
     const directory = path.join(libraryRoot, area);
     const entries = await readdir(directory, {withFileTypes: true}).catch(() => []);
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      if (!entry.isDirectory() || entry.name.includes('.partial-')) continue;
       const metadata = await readJson(path.join(directory, entry.name, 'metadata.json'));
       if (!metadata) continue;
       const existingKey = metadata.dedupeKey || sourceKeyFromUrl(metadata.capturedUrl || metadata.url);
@@ -222,10 +223,12 @@ export function createKumoBridge({libraryRoot, port = DEFAULT_PORT, remoteGet = 
   if (!libraryRoot || !path.isAbsolute(libraryRoot)) throw new Error('KUMO libraryRoot must be an absolute path.');
   const resolvedRoot = path.resolve(libraryRoot);
   const library = createLibrary(resolvedRoot);
+  const pageCapture=createPageCapture({library,findExisting:clip=>findExisting(resolvedRoot,clip),persist:payload=>saveClip(resolvedRoot,payload,library),sourceKey:sourceKeyFromUrl,remoteGet});
   let evidenceLibrary;
   const evidence=()=>evidenceLibrary??=createEvidenceLibrary(resolvedRoot);
   const jobs = new Map();
   const mediaJobs = new Map();
+  const captureJobs = new Map();
   let mediaLibrary;
   const writableMedia=()=>mediaLibrary??=createEvidenceLibrary(resolvedRoot,{allowOrganize:true});
   async function runMediaJob(job,input){
@@ -391,7 +394,13 @@ export function createKumoBridge({libraryRoot, port = DEFAULT_PORT, remoteGet = 
       }
       if (req.method === 'GET' && req.url === '/status') {
         await ensureLibrary(resolvedRoot);
-return response(res, 200, {ok: true, service: 'kumo-local-bridge', apiVersion: API_VERSION, bridgeVersion: '0.17.1', capabilities: ['nested_assets', 'video_assets', 'platform_guides', 'repair_incomplete_clips', 'x_public_media', 'x_video_jobs', 'library_browser', 'user_annotations', 'local_library_ui','ai_classification','knowledge_map','knowledge_focus','knowledge_atlas','content_keywords','incremental_index','reversible_tag_delete','media_preparation'], activeJobs: [...jobs.values(),...mediaJobs.values()].slice(-10), libraryRoot: resolvedRoot}, origin);
+return response(res, 200, {ok: true, service: 'kumo-local-bridge', apiVersion: API_VERSION, bridgeVersion: '0.18.15', capabilities: ['nested_assets', 'video_assets', 'platform_guides', 'repair_incomplete_clips', 'x_public_media', 'x_video_jobs', 'library_browser', 'user_annotations', 'local_library_ui','ai_classification','knowledge_map','knowledge_focus','knowledge_atlas','content_keywords','incremental_index','reversible_tag_delete','media_preparation','page_capture'], activeJobs: [...jobs.values(),...mediaJobs.values(),...captureJobs.values()].slice(-10), libraryRoot: resolvedRoot}, origin);
+      }
+      if(req.method==='POST'&&req.url==='/capture'){
+        const input=await readBody(req,8*1024*1024),job={id:randomUUID(),kind:'page_capture',phase:'capturing',startedAt:new Date().toISOString()};captureJobs.set(job.id,job);
+        try{const result=await pageCapture.capture(input);job.phase=result.status==='partial'?'partial':'complete';return response(res,200,result,origin);}
+        catch(error){job.phase='failed';throw error;}
+        finally{job.finishedAt=new Date().toISOString();for(const [id,value] of captureJobs)if(captureJobs.size>30&&value.finishedAt)captureJobs.delete(id);}
       }
       if(req.method==='POST'&&req.url==='/media/prepare'){
         const input=await readBody(req,4000);

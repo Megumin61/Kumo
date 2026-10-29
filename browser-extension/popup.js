@@ -70,6 +70,7 @@ const CONTENT_TYPE_LABELS = {
 
 let clip = null;
 let directoryHandle = null;
+let needsDirectoryPermission = false;
 let activeWindowId = null;
 let activeTabId = null;
 let bridgeStatus = null;
@@ -78,9 +79,20 @@ let progressTimer = null;
 let frameFile = null;
 let completeSaved = false;
 let targetEpoch=0;
+let bridgeReconnectTimer=null,bridgeReconnectBusy=false;
 const quickSilent=Boolean(globalThis.KumoQuickWorker)||new URLSearchParams(location.search).get('silent')==='1';
 const quickParam=name=>globalThis.KumoQuickWorker?.params?.[name]??new URLSearchParams(location.search).get(name);
 let saveInitiated=false, quickHandled=false;
+function requiredMediaOrigins() {
+  const useXJob=usingBridge()&&Number(bridgeStatus?.apiVersion)>=6&&clip.platformId==='x'&&downloadVideoEl.checked;
+  const media=[];
+  if(downloadImagesEl.checked&&!useXJob)media.push(...(clip.images||[]));
+  if(downloadVideoEl.checked&&!(usingBridge()&&clip.platformId==='x'&&Number(bridgeStatus?.apiVersion)>=6)){
+    media.push(...(clip.videos||[]).filter(video=>/^https?:/i.test(video.url)));
+    if(clip.platformId==='x'&&(clip.videos||[]).some(video=>video.kind==='blob'))media.push({url:clip.capturedUrl||clip.url},{url:'https://video.twimg.com/'});
+  }
+  return [...new Set(media.map(item=>{try{const url=new URL(item.url);return /^https?:$/.test(url.protocol)?url.origin+'/*':'';}catch{return '';}}).filter(Boolean))];
+}
 async function closeQuick() {
   if(globalThis.KumoQuickWorker){await globalThis.KumoQuickWorker.finish();return;}
   try { const current=await chrome.tabs.getCurrent(); if(current?.id)await chrome.tabs.remove(current.id); else window.close(); }
@@ -91,6 +103,15 @@ async function revealQuick(message='收藏未完成，请打开 Kumo 重试',kin
   quickHandled=true;
   try { await KumoQuickFeedback.show(activeTabId,message,kind); }
   catch(error) { console.error('无法显示收藏状态',error); if(activeTabId)await chrome.action.setBadgeText({tabId:activeTabId,text:'!'}).catch(()=>{}); }
+  await closeQuick();
+}
+async function authorizeQuick(message) {
+  if(!quickSilent || quickHandled) return;
+  quickHandled=true;
+  try {
+    const opened=await globalThis.KumoQuickWorker?.authorize(activeTabId,activeWindowId);
+    await KumoQuickFeedback.show(activeTabId,opened?message:'请点击 Kumo 图标完成授权','warning');
+  } catch(error) { console.error('无法打开授权面板',error); }
   await closeQuick();
 }
 async function finishQuick(message='收藏完成') {
@@ -231,17 +252,21 @@ async function loadPage() {
   try {
     if(globalThis.KumoQuickWorker)await globalThis.KumoQuickWorker.ready;
     const sourceId=String(quickParam('sourceTabId')||'');
-    const tab=sourceId && /^\d+$/.test(sourceId) ? await chrome.tabs.get(Number(sourceId)) : (await chrome.tabs.query({active: true, currentWindow: true}))[0];
+    const snapshot=globalThis.KumoQuickWorker?.params?.snapshot;
+    const tab=snapshot?.tab||(sourceId && /^\d+$/.test(sourceId) ? await chrome.tabs.get(Number(sourceId)) : (await chrome.tabs.query({active: true, currentWindow: true}))[0]);
     if (!tab?.id || !/^https?:/i.test(tab.url || '')) throw new Error('请从网页点击 Kumo 图标，或按 Alt+Shift+K 打开。');
     activeWindowId = tab.windowId;
     activeTabId = tab.id;
-    const [stateResult] = await chrome.scripting.executeScript({target: {tabId: tab.id}, world: 'MAIN', func: readKumoPageState}).catch(() => []);
-    const result = await chrome.scripting.executeScript({target: {tabId: tab.id}, func: extractKumoPage, args: [stateResult?.result || {}]});
-    clip = result?.[0]?.result;
+    if(snapshot)clip=snapshot.clip;
+    else {
+      const [stateResult] = await chrome.scripting.executeScript({target: {tabId: tab.id}, world: 'MAIN', func: readKumoPageState}).catch(() => []);
+      const result = await chrome.scripting.executeScript({target: {tabId: tab.id}, func: extractKumoPage, args: [stateResult?.result || {}]});
+      clip = result?.[0]?.result;
+    }
     if (!clip) throw new Error('没有从当前页面读到内容。');
     if (clip.videos?.length || clip.contentType === 'video') {
       document.getElementById('video-focus').hidden = false;
-      const [frameResult] = await chrome.scripting.executeScript({target: {tabId: tab.id}, func: captureKumoVideoFrame, args: [clip.sourceId, clip.platformId, clip.videos]}).catch(() => []);
+      const [frameResult] = snapshot?[{result:snapshot.frame}]:await chrome.scripting.executeScript({target: {tabId: tab.id}, func: captureKumoVideoFrame, args: [clip.sourceId, clip.platformId, clip.videos]}).catch(() => []);
       const frame = frameResult?.result || {frameStatus: 'unavailable', frameError: 'frame_capture_failed'};
       const {dataUrl, ...context} = frame;
       clip.videoContext = context;
@@ -282,10 +307,9 @@ async function loadPage() {
     if (previousJob&&usingBridge()&&quickParam('quick')!=='1') void followVideoJob(previousJob.id);
     else if(quickParam('quick')==='1'){
       const ready=usingBridge()||locationModeEl.value==='downloads'||directoryHandle&&await directoryHandle.queryPermission({mode:'readwrite'})==='granted';
-      if(!ready){setStatus('先设置保存文件夹，再使用一键剪藏。','warning');saveOptions.hidden=false;void revealQuick('请先打开 Kumo 设置保存位置','warning');return;}
-      const media=usingBridge()&&clip.platformId==='x'?[]:[...(downloadImagesEl.checked?clip.images||[]:[]),...(downloadVideoEl.checked?clip.videos||[]:[])];
-      const origins=[...new Set(media.map(m=>{try{return new URL(m.url).origin+'/*';}catch{return '';}}).filter(v=>/^https?:/.test(v)))];
-      if(origins.length&&!await chrome.permissions.contains({origins})){setStatus('首次保存此来源需授权媒体读取，请点击嚼一嚼确认。','warning');void revealQuick('请打开 Kumo 授权后收藏','warning');return;}
+      if(!ready){setStatus('请授权或设置保存文件夹。','warning');saveOptions.hidden=false;void authorizeQuick('请在面板中授权保存位置');return;}
+      const origins=requiredMediaOrigins();
+      if(origins.length&&!await chrome.permissions.contains({origins})){setStatus('首次保存此来源需授权媒体读取，请点击嚼一嚼确认。','warning');void authorizeQuick('请在面板中点击保存并授权');return;}
       void save();
     }
   } catch (error) {
@@ -308,6 +332,7 @@ async function chooseFolder() {
     }
     await KumoStorage.initializeLibrary(picked, profile);
     directoryHandle = picked;
+    needsDirectoryPermission = false;
     locationModeEl.value='directory';localStorage.setItem('kumo-location-'+targetEl.value,'directory');completeSaved=false;
     await KumoTags.load(false);
     updateFolder(directoryHandle);
@@ -323,7 +348,7 @@ async function chooseFolder() {
 async function screenshotBlob() {
   if (!screenshotEl.checked || typeof activeWindowId !== 'number') return null;
   try {
-    if(quickSilent){const [visible]=await chrome.tabs.query({active:true,windowId:activeWindowId});if(visible?.id!==activeTabId)return null;}
+    if(quickSilent){const [visible]=await chrome.tabs.query({active:true,windowId:activeWindowId});if(visible?.id!==activeTabId||visible.url!==clip.capturedUrl)return null;}
     const dataUrl = await chrome.tabs.captureVisibleTab(activeWindowId, {format: 'png'});
     return await (await fetch(dataUrl)).blob();
   } catch {
@@ -634,6 +659,8 @@ async function loadTarget() {
   const [connection,handle]=await Promise.all([KumoBridge.status(),KumoStorage.getHandle(requestedTarget).catch(()=>null)]);
   if(requestId!==targetEpoch)return;
   bridgeStatus=connection;directoryHandle=handle;
+  needsDirectoryPermission=Boolean(handle && await handle.queryPermission({mode:'readwrite'})!=='granted');
+  if(requestId!==targetEpoch)return;
   locationModeEl.value=KumoDestination.initialMode(savedMode,requestedTarget==='codex'?connection:null);
   refreshSelects.get(locationModeEl)?.();
   updateFolder(directoryHandle);
@@ -646,7 +673,20 @@ async function loadTarget() {
   }
   if(requestId!==targetEpoch)return;
   saveEl.disabled=!clip;saveEl.textContent=!usingBridge()&&!directoryHandle&&locationModeEl.value==='directory'?'选择文件夹并保存':'嚼一嚼';
-  if(bridgeExpected&&!connection)setStatus('本地资料库未连接，原收藏和标签仍在。恢复服务后点击“我的收藏”刷新。','warning');
+  if(bridgeExpected&&!connection){setStatus('本地资料库未连接，正在等待服务恢复。','warning');watchBridgeReconnect();}
+  else if(bridgeReconnectTimer){clearInterval(bridgeReconnectTimer);bridgeReconnectTimer=null;}
+}
+function watchBridgeReconnect(){
+  if(quickSilent||bridgeReconnectTimer)return;
+  bridgeReconnectTimer=setInterval(()=>{
+    if(bridgeReconnectBusy||document.hidden||targetEl.value!=='codex'||locationModeEl.value!=='auto'||saveEl.disabled&&saveInitiated)return;
+    bridgeReconnectBusy=true;const requestId=targetEpoch;
+    void KumoBridge.status().then(async connection=>{
+      if(!connection||requestId!==targetEpoch)return;
+      await loadTarget();
+      if(usingBridge())setStatus('本地资料库已重新连接。','success');
+    }).catch(()=>{}).finally(()=>{bridgeReconnectBusy=false;});
+  },5000);
 }
 document.addEventListener('kumo-tags-error',event=>setStatus(event.detail,'error'));
 
@@ -664,7 +704,24 @@ document.getElementById('open-library').addEventListener('click', () => {
 });
 
 changeFolderEl.addEventListener('click', chooseFolder);
-saveEl.addEventListener('click', save);
+saveEl.addEventListener('click', async()=>{
+  if(!clip)return;
+  try {
+    if(!usingBridge() && locationModeEl.value==='directory' && !directoryHandle){
+      if(await chooseFolder())setStatus('文件夹已设置，请再次点击保存以继续授权媒体。','warning');
+      return;
+    }
+    if(!usingBridge() && directoryHandle && locationModeEl.value!=='downloads' && needsDirectoryPermission){
+      const granted=await directoryHandle.requestPermission({mode:'readwrite'});
+      needsDirectoryPermission=granted!=='granted';
+      setStatus(needsDirectoryPermission?'未获得文件夹授权。':'文件夹已授权，请再次点击保存以继续。',needsDirectoryPermission?'warning':'success');
+      return;
+    }
+    const origins=requiredMediaOrigins();
+    if(origins.length && !await chrome.permissions.request({origins})){setStatus('未获得媒体读取授权，请允许后重试。','warning');return;}
+    await save();
+  }catch(error){setStatus('授权未完成：'+(error.message||String(error)),'warning');}
+});
 document.getElementById('use-connected').onclick=()=>{targetEl.value='codex';localStorage.setItem('kumo-target','codex');localStorage.setItem('kumo-location-codex','auto');void loadTarget();};
 locationModeEl.addEventListener('change',()=>{if(locationModeEl.value==='auto'){targetEl.value='codex';localStorage.setItem('kumo-target','codex');}localStorage.setItem('kumo-location-'+targetEl.value,locationModeEl.value);void loadTarget();});
 for(const control of [screenshotEl,downloadImagesEl,downloadVideoEl,commentCountEl])control.addEventListener('change',()=>KumoDestination.saveOptions(localStorage,{screenshot:screenshotEl.checked,images:downloadImagesEl.checked,video:downloadVideoEl.checked,comments:Number(commentCountEl.value)}));
@@ -676,7 +733,27 @@ noteEl.addEventListener('input', annotationChanged);
 document.addEventListener('kumo-annotation-change', annotationChanged);
 const saveOptions=document.getElementById('save-options');
 const refreshShortcuts=KumoShortcuts.mount();
-settingsEntry.onclick=()=>{void refreshShortcuts();saveOptions.hidden=false;document.getElementById('settings-back').focus();};
+const pageEntryControl=document.getElementById('toggle-page-entry');
+async function refreshPageEntry(){
+  if(!pageEntryControl)return;
+  const info=document.getElementById('page-entry-info');pageEntryControl.disabled=true;
+  try{
+    if(!Number.isInteger(activeTabId))throw Error('请先打开一个普通网页。');
+    const [result]=await chrome.scripting.executeScript({target:{tabId:activeTabId},func:getKumoPageEntryState});
+    const enabled=Boolean(result?.result);pageEntryControl.setAttribute('aria-pressed',String(enabled));pageEntryControl.textContent=enabled?'关闭本页入口':'开启本页入口';info.textContent=enabled?'本页已开启，右下角按钮可直接收藏。':'';
+  }catch(error){info.textContent=error.message||'此页面暂不支持页面入口。';}
+  finally{pageEntryControl.disabled=false;}
+}
+if(pageEntryControl)pageEntryControl.onclick=async()=>{
+  const info=document.getElementById('page-entry-info'),enabled=pageEntryControl.getAttribute('aria-pressed')!=='true';pageEntryControl.disabled=true;
+  try{
+    if(!Number.isInteger(activeTabId))throw Error('请先打开一个普通网页。');
+    const [result]=await chrome.scripting.executeScript({target:{tabId:activeTabId},func:toggleKumoPageEntry,args:[enabled]});
+    const active=Boolean(result?.result);pageEntryControl.setAttribute('aria-pressed',String(active));pageEntryControl.textContent=active?'关闭本页入口':'开启本页入口';info.textContent=active?'已在本页右下角显示收藏按钮。':'本页入口已关闭。';
+  }catch(error){info.textContent=error.message||'无法显示页面入口，请回到帖子页重试。';}
+  finally{pageEntryControl.disabled=false;}
+};
+settingsEntry.onclick=()=>{void refreshShortcuts();void refreshPageEntry();saveOptions.hidden=false;document.getElementById('settings-back').focus();};
 document.getElementById('destination-open').onclick=settingsEntry.onclick;
 document.getElementById('settings-back').onclick=()=>{saveOptions.hidden=true;settingsEntry.focus();};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!saveOptions.hidden){saveOptions.hidden=true;settingsEntry.focus();}if((event.ctrlKey||event.metaKey)&&event.key==='Enter'&&!event.isComposing&&saveOptions.hidden&&!saveEl.disabled){event.preventDefault();saveEl.click();}});

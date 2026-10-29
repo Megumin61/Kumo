@@ -82,8 +82,8 @@ async function load(reset = true) {
     for (const item of result.items) {
       records.push(item);++number;
       const b = el('button','','card'); b.type = 'button'; b.dataset.item = item.id;
-      const names=[...new Set([KumoUI.preview(item),...(item.files?.images||[])].filter(KumoUI.validAsset))].slice(0,4);
-      if(names.length){const wrap=el('span','','thumb-wrap');wrap.dataset.tiles=String(names.length);if(names.length>1)wrap.classList.add('thumb-collage');for(const name of names){const thumb=imageFor(item,'thumb',name);if(thumb)wrap.append(thumb);}if(item.stats?.videos)wrap.append(el('span','▶','play'));b.append(wrap);}
+      const thumb=imageFor(item,'thumb');
+      if(thumb){const wrap=el('span','','thumb-wrap');wrap.append(thumb);if(item.stats?.videos)wrap.append(el('span','▶','play'));b.append(wrap);}
       const body = el('span','','card-body');const heading=el('span',KumoUI.displayTitle(item),'card-title');heading.title=item.title||'';body.append(heading);
       const meta = el('span','','card-meta'), mark = el('span','','platform-mark'); KumoUI.platform(mark,item.platform || '网页'); meta.append(mark,document.createTextNode(item.author||'')); body.append(meta);
       const tagRow=el('span','','card-tags');for(const keyword of KumoUI.contentKeywords(item.contentKeywords))tagRow.append(el('span',keyword,'card-tag content-keyword'));tagRow.setAttribute('aria-label','AI 内容关键词');if(tagRow.children.length)body.append(tagRow);
@@ -129,6 +129,9 @@ async function show(id) {
     byId('collection-control').hidden=true;byId('change-collection').setAttribute('aria-expanded','false');
     const notes = (result.events || []).filter(e=>e.kind !== 'collection').map(e=>e.note).filter(note=>note !== ''); byId('note-history').textContent = notes.length ? notes.join('\n\n────────\n\n') : meta.userNote || '暂无笔记';
     byId('assets').replaceChildren(); const files = meta.files || {};
+    const imageCount=[...(files.frames||[]),...(files.images||[])].filter(KumoUI.validAsset).length;
+    byId('assets').classList.toggle('media-masonry',imageCount>1);
+    byId('assets').style.columnCount=imageCount>1?String(Math.min(4,imageCount)):'';
     byId('media-caption').textContent=resourceText({stats:meta.stats}).replaceAll('\n',' · ')+(meta.stats?.characters?' · '+meta.stats.characters+' 字':'');
     for (const name of [...(files.frames || []), ...(files.images || []), ...(files.videos || [])]) {
       if (!KumoUI.validAsset(name) && !/^assets\/video-\d{2}\.(mp4|webm|mov|m4v)$/i.test(name)) continue;

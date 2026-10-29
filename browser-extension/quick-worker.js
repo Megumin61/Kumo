@@ -1,16 +1,18 @@
 (function(scope){
   let begin;
   const ready=new Promise(resolve=>{begin=resolve;});
-  const worker={params:null,ready,finish:()=>rpc('finish'),tip:(...args)=>rpc('tip',...args)};
+  const worker={params:null,ready,finish:()=>rpc('finish'),tip:(...args)=>rpc('tip',...args),authorize:(...args)=>rpc('authorize',...args)};
+  const jobId=new URLSearchParams(location.search).get('job');
   scope.KumoQuickWorker=worker;
   if(!chrome.runtime.getURL)chrome.runtime.getURL=path=>new URL(path,location.href).href;
-  chrome.runtime.onMessage.addListener((message,_sender,respond)=>{
-    if(message?.type!=='kumo-quick-start'||worker.params)return;
-    worker.params={sourceTabId:message.tabId,sourceWindowId:message.windowId,quick:'1'};
-    begin();respond({ok:true});
+  window.addEventListener('message',event=>{
+    const message=event.data;
+    if(event.source!==parent||event.origin!==location.origin||message?.type!=='kumo-quick-start'||message.jobId!==jobId||worker.params)return;
+    worker.params={sourceTabId:message.tabId,sourceWindowId:message.windowId,quick:'1',tagId:message.tagId,snapshot:message.snapshot};
+    begin();
   });
   async function rpc(method,...args){
-    const result=await chrome.runtime.sendMessage({type:'kumo-quick-rpc',method,args});
+    const result=await chrome.runtime.sendMessage({type:'kumo-quick-rpc',jobId,method,args});
     if(!result?.ok)throw new Error(result?.error||'后台通信失败');
     return result.value;
   }
