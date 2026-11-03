@@ -83,7 +83,7 @@
       clip.authorFollowups.forEach((item, index) => {
         lines.push(`### 补充 ${index + 1}`, '', item.text || '该补充只包含媒体。', '');
         if (item.url) lines.push(`补充来源：[打开对应内容](${item.url})`, '');
-        (item.media || []).forEach((url, mediaIndex) => lines.push(`![作者补充图片 ${mediaIndex + 1}](${url})`, ''));
+        (item.media || []).forEach((media, mediaIndex) => {const url=typeof media==='string'?media:media.url;if(media.kind==='video'){lines.push(`作者补充视频 ${mediaIndex + 1}：[打开媒体](${media.videoUrl || url})`, '');}else lines.push(`![作者补充图片 ${mediaIndex + 1}](${url})`, '');});
         (item.videoPosters || []).forEach((url, mediaIndex) => lines.push(`作者补充视频封面 ${mediaIndex + 1}：${url}`, ''));
       });
     }
@@ -91,7 +91,7 @@
       lines.push('## 互动数据快照', '', `${metricItems.join(' · ')}（采集于 ${safeLine(clip.socialCapturedAt || clip.capturedAt)}；数值会随时间变化）`, '');
     }
     if (clip.comments?.length) {
-      lines.push('## 讨论快照（辅助证据）', '', '> 以下是剪藏时页面已加载的评论，优先按可识别的点赞数排序；不代表全站最高赞、事实或普遍共识。', '');
+      lines.push('## 讨论快照（辅助证据）', '', '> 以下是剪藏时页面可读取的评论；X 最多保留返回顺序前 5 条，不代表全部回复、全站最高赞、事实或普遍共识。', '');
       clip.comments.forEach((comment, index) => {
         const commentAuthor = safeLine(comment.author) || '匿名用户';
         const author = comment.authorUrl ? `[${commentAuthor}](${comment.authorUrl})` : commentAuthor;
@@ -99,6 +99,7 @@
         lines.push(`${index + 1}. ${author}${likes}：${safeLine(comment.text)}`, '');
       });
     }
+    if (clip.savedCaptions?.length) lines.push('## 原字幕', '', ...clip.savedCaptions.map(name=>`[页面已加载字幕](${name})`), '');
     if (clip.images?.length) {
       lines.push('## 图片', '');
       clip.images.forEach((image, index) => {
@@ -147,6 +148,7 @@
         readableHtml: 'readable.html',
         screenshot: screenshotSaved ? 'viewport.png' : null,
         images: (clip.images || []).filter(image => image.localFile).map(image => image.localFile),
+        captions: clip.savedCaptions || [],
         videos: (clip.videos || []).filter(video => video.localFile).map(video => video.localFile),
         frames: clip.videoContext?.frameFile ? [clip.videoContext.frameFile] : []
       }
@@ -159,12 +161,12 @@
     const metricLabels = {likes: '点赞', favorites: '收藏', bookmarks: '书签', comments: '评论', replies: '回复', reposts: '转发', shares: '分享', views: '浏览'};
     const metrics = Object.entries(clip.socialMetrics || {}).map(([name, metric]) => `${metricLabels[name] || name} ${escapeHtml(metric?.raw || metric?.value || '')}`).filter(value => !value.endsWith(' ')).join(' · ');
     const comments = (clip.comments || []).map(comment => `<li><strong>${escapeHtml(comment.author || '匿名用户')}</strong>${comment.likes?.raw ? ` · ${escapeHtml(comment.likes.raw)} 赞` : ''}：${escapeHtml(comment.text)}</li>`).join('');
-    const followups = (clip.authorFollowups || []).map((item, index) => `<section><h3>补充 ${index + 1}</h3><p>${escapeHtml(item.text || '该补充只包含媒体。')}</p>${item.url ? `<p><a href="${escapeHtml(item.url)}">打开对应内容</a></p>` : ''}${(item.media || []).map(url => `<img src="${escapeHtml(url)}" alt="作者补充图片">`).join('')}${(item.videoPosters || []).map(url => `<p>作者补充视频封面：<a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`).join('')}</section>`).join('');
+    const followups = (clip.authorFollowups || []).map((item, index) => `<section><h3>补充 ${index + 1}</h3><p>${escapeHtml(item.text || '该补充只包含媒体。')}</p>${item.url ? `<p><a href="${escapeHtml(item.url)}">打开对应内容</a></p>` : ''}${(item.media || []).map(media => {const url=typeof media==='string'?media:media.url;return media.kind==='video'?`<p><a href="${escapeHtml(media.videoUrl || url)}">作者补充视频</a></p>`:`<img src="${escapeHtml(url)}" alt="作者补充图片">`;}).join('')}${(item.videoPosters || []).map(url => `<p>作者补充视频封面：<a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`).join('')}</section>`).join('');
     return `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: http: https: data:; media-src 'self' file: http: https: blob:; style-src 'unsafe-inline'">
 <title>${escapeHtml(clip.title)}</title><style>body{max-width:760px;margin:40px auto;padding:0 20px;font:17px/1.75 system-ui,sans-serif;color:#202124}img{max-width:100%;height:auto}a{color:#175c46}pre{white-space:pre-wrap;background:#f5f5f2;padding:12px;border-radius:8px}blockquote{border-left:3px solid #9ab8aa;margin-left:0;padding-left:16px;color:#526059}</style></head>
-<body><p><a href="${escapeHtml(clip.accessUrl || clip.url)}">打开原始页面</a></p><h1>${escapeHtml(clip.title)}</h1><p>${escapeHtml(clip.platform)} · 作者 ${authorHtml}${clip.published ? ` · ${escapeHtml(clip.published)}` : ''}</p>${clip.contentHtml || ''}${followups ? `<h2>作者在评论区或帖子串中的补充</h2>${followups}` : ''}${metrics ? `<h2>互动数据快照</h2><p>${metrics}</p>` : ''}${comments ? `<h2>讨论快照（辅助证据）</h2><p>从剪藏时已加载的评论中优先保留可识别的高赞评论，不代表全站最高赞、事实或普遍共识。</p><ol>${comments}</ol>` : ''}${clip.images?.length ? `<h2>帖子图片</h2>${clip.images.map((image, index) => `<figure><img src="${escapeHtml(image.localFile || image.url)}" alt="${escapeHtml(image.alt || `图片 ${index + 1}`)}">${image.alt ? `<figcaption>${escapeHtml(image.alt)}</figcaption>` : ''}</figure>`).join('')}` : ''}${clip.videos?.length ? `<h2>帖子视频</h2>${clip.videos.map((video, index) => video.localFile ? `<video controls preload="metadata" src="${escapeHtml(video.localFile)}"${video.poster ? ` poster="${escapeHtml(video.poster)}"` : ''}>视频 ${index + 1}</video>` : `<p>视频 ${index + 1} 未保存为本地文件。${video.url && !String(video.url).startsWith('blob:') ? `<a href="${escapeHtml(video.url)}">打开播放来源</a>` : ''}</p>`).join('')}` : ''}<h2>回溯</h2><p><a href="${escapeHtml(clip.accessUrl || clip.url)}">打开原帖</a></p></body></html>`;
+<body><p><a href="${escapeHtml(clip.accessUrl || clip.url)}">打开原始页面</a></p><h1>${escapeHtml(clip.title)}</h1><p>${escapeHtml(clip.platform)} · 作者 ${authorHtml}${clip.published ? ` · ${escapeHtml(clip.published)}` : ''}</p>${clip.contentHtml || ''}${followups ? `<h2>作者在评论区或帖子串中的补充</h2>${followups}` : ''}${metrics ? `<h2>互动数据快照</h2><p>${metrics}</p>` : ''}${comments ? `<h2>讨论快照（辅助证据）</h2><p>剪藏时页面可读取的回复；X 最多保留返回顺序前 5 条，不代表全部或全站热评。</p><ol>${comments}</ol>` : ''}${clip.images?.length ? `<h2>帖子图片</h2>${clip.images.map((image, index) => `<figure><img src="${escapeHtml(image.localFile || image.url)}" alt="${escapeHtml(image.alt || `图片 ${index + 1}`)}">${image.alt ? `<figcaption>${escapeHtml(image.alt)}</figcaption>` : ''}</figure>`).join('')}` : ''}${clip.videos?.length ? `<h2>帖子视频</h2>${clip.videos.map((video, index) => video.localFile ? `<video controls preload="metadata" src="${escapeHtml(video.localFile)}"${video.poster ? ` poster="${escapeHtml(video.poster)}"` : ''}>视频 ${index + 1}</video>` : `<p>视频 ${index + 1} 未保存为本地文件。${video.url && !String(video.url).startsWith('blob:') ? `<a href="${escapeHtml(video.url)}">打开播放来源</a>` : ''}</p>`).join('')}` : ''}<h2>回溯</h2><p><a href="${escapeHtml(clip.accessUrl || clip.url)}">打开原帖</a></p></body></html>`;
   }
 
   const api = {buildMarkdown, buildMetadata, buildReadableHtml, slug};

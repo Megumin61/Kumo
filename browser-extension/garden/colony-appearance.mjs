@@ -21,12 +21,18 @@ export function memberNodeSize(record,domainSize=164){
 }
 export function colonyRayRadius(h,angle){if(!h.plot)return h.size/2;const {rx,ry,cy=0}=h.plot,c=Math.cos(angle),s=Math.sin(angle),a=(c/rx)**2+(s/ry)**2,b=-2*cy*s/ry**2,d=(cy/ry)**2-1;return (-b+Math.sqrt(Math.max(0,b*b-4*a*d)))/(2*a);}
 
+function contentBounds(layout,hub){
+ const envelope=hub.plot?.envelope,pts=[];
+ if(envelope?.radii?.length){const tilt=(hub.plot.tilt||0)*Math.PI/180,c=Math.cos(tilt),s=Math.sin(tilt);envelope.radii.forEach((r,i)=>{const a=i/envelope.radii.length*Math.PI*2,x=Math.cos(a)*r*1.08,y=Math.sin(a)*r*1.08;pts.push([hub.x+x*c-y*s,hub.y+(hub.plot.cy||0)+x*s+y*c]);});}
+ for(const p of layout.points.values())if(p.key===hub.key||p.owner===hub.key)pts.push([p.x-p.size/2-30,p.y-p.size/2-20],[p.x+p.size/2+30,p.y+p.size/2+48]);
+ return {left:Math.min(...pts.map(p=>p[0])),right:Math.max(...pts.map(p=>p[0])),top:Math.min(...pts.map(p=>p[1])),bottom:Math.max(...pts.map(p=>p[1]))};
+}
 export function fieldCameraFrame(layout,{width,height,selected,panel=false}){
  const point=layout.points.get(selected),hub=point?(point.owner?layout.points.get(point.owner):point):null;
  const focus=hub?.colonyR?hub:null;
- const boxes=focus?[{left:focus.x-focus.plot.rx*1.25,right:focus.x+focus.plot.rx*1.25,top:focus.y+(focus.plot.cy||0)-focus.plot.ry*1.25,bottom:focus.y+(focus.plot.cy||0)+focus.plot.ry*1.25+30}]:layout.reserved;
+ const boxes=layout.displayWindow?(focus?[contentBounds(layout,focus)]:[...layout.points.values()].filter(p=>!p.owner&&p.plot).map(h=>contentBounds(layout,h))):focus?[{left:focus.x-focus.plot.rx*1.25,right:focus.x+focus.plot.rx*1.25,top:focus.y+(focus.plot.cy||0)-focus.plot.ry*1.25,bottom:focus.y+(focus.plot.cy||0)+focus.plot.ry*1.25+30}]:layout.reserved;
  if(!boxes?.length)return null;
  const left=Math.min(...boxes.map(b=>b.left)),right=Math.max(...boxes.map(b=>b.right)),top=Math.min(...boxes.map(b=>b.top)),bottom=Math.max(...boxes.map(b=>b.bottom));
- const usableHeight=focus?height*(panel?.52:.88):height,zoom=Math.min(focus?1.2:1,(width-36)/Math.max(1,right-left),(usableHeight-36)/Math.max(1,bottom-top));
- return {zoom:Math.max(.08,zoom),center:{x:(left+right)/2,y:(top+bottom)/2},screenY:usableHeight/2};
+ const usableHeight=focus?height*.94:height,zoom=Math.min(focus?1.2:1,(width-36)/Math.max(1,right-left),(usableHeight-36)/Math.max(1,bottom-top));
+ return {zoom:Math.max(.025,zoom),center:{x:(left+right)/2,y:(top+bottom)/2},screenY:usableHeight/2};
 }

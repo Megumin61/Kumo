@@ -19,13 +19,13 @@ export function organicPath(rx,ry,seed=0,t=0,{wobble=1,points=40}={}){
 }
 
 // One shared loop breathes every registered bubble; hovering swells it a little.
-export function createBreathing(){
+export function createBreathing({animated=true}={}){
  let items=[],frame=0,last=0,afterTick=()=>{};
  function render(t){for(const b of items){if(!b.el.isConnected)continue;const hovering=b.hover||b.follow?.hover,k=hovering?1.03:1;b.el.setAttribute('d',(b.pathBuilder||organicPath)(b.rx*k,b.ry*k,b.seed,t,{wobble:(b.wobble||1)*(hovering?1.8:1)}));}afterTick(t);}
  function tick(now){frame=requestAnimationFrame(tick);if(now-last<45)return;last=now;render(now/1000);}
  return {
-  add(el,rx,ry,seed,wobble=1,pathBuilder=organicPath){const item={el,rx,ry,seed:hashSeed(seed),wobble,hover:false,pathBuilder};items.push(item);el.setAttribute('d',pathBuilder(rx,ry,item.seed,0,{wobble}));if(!frame&&!reduced())frame=requestAnimationFrame(tick);return item;},
-  clear(){items=[];},
+  add(el,rx,ry,seed,wobble=1,pathBuilder=organicPath){const item={el,rx,ry,seed:hashSeed(seed),wobble,hover:false,pathBuilder};items.push(item);el.setAttribute('d',pathBuilder(rx,ry,item.seed,0,{wobble}));if(animated&&!frame&&!reduced())frame=requestAnimationFrame(tick);return item;},
+  clear(){items=[];cancelAnimationFrame(frame);frame=0;},
   onTick(fn){afterTick=typeof fn==='function'?fn:()=>{};},
   refresh(time=0){render(time);},
   stop(){cancelAnimationFrame(frame);frame=0;}
@@ -95,3 +95,6 @@ export function sourceFamily(model,source,colonyFamily,pool,kinds=pool.length){
  // Every third leaf repeats its colony's plant so the colony still reads as one patch.
  if(i%3===0)return colonyFamily;const start=Math.floor(hashSeed(source.primary||'')*companions.length);return companions[(start+(i%(k-1)))%companions.length];
 }
+
+// A stable mix within one colony, preserving its overall art style and explicit assignments.
+export function topicFamily(model,topic,colonyFamily,pool){const companions=pool.filter(id=>id!==colonyFamily);if(!companions.length)return colonyFamily;const siblings=model.topics.filter(t=>t.domainId===topic.domainId&&!t.displayOnly).sort((a,b)=>a.key.localeCompare(b.key)),i=Math.max(0,siblings.findIndex(t=>t.key===topic.key));return i%4===0?colonyFamily:companions[(Math.floor(hashSeed(topic.domainId||'')*companions.length)+i-1)%companions.length];}

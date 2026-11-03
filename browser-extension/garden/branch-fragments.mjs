@@ -35,5 +35,5 @@ export function outwardFragmentSpots(layout,plan){
 export function structuralEdge(edge,points){
  if(edge.kind==='hierarchy')return true;if(edge.kind!=='membership')return false;
  const from=points.get(edge.from)?.record.kind,to=points.get(edge.to)?.record.kind;
- return (['domain','pending','unassigned'].includes(from)&&(to==='topic'||to==='source'&&!points.get(edge.to).clusterTopic))||(from==='topic'&&to==='source');
+ return (['domain','pending','unassigned'].includes(from)&&(to==='topic'||to==='source'&&!points.get(edge.to).clusterTopic))||(from==='topic'&&(to==='source'||to==='topic'));
 }

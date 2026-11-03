@@ -125,3 +125,47 @@ body[data-edition] #reader-body .dom-stats>div{flex-direction:column!important;j
 .source-detail-intro h3{padding-left:9px;border-left:3px solid #a4b981}
 .source-detail-intro p{font-size:13px!important;line-height:1.9!important;margin:0 0 12px!important;color:#68765a!important;overflow-wrap:anywhere}
 .source-detail-tags{margin-top:18px!important}.source-tag-list{display:flex;flex-wrap:wrap;gap:7px}.source-tag-list span{font-size:11px;line-height:1.6;padding:4px 9px;border-radius:7px;background:#edf1e1;color:#71845b;border:1px solid #e0e6ce}.source-tag-list span:nth-child(2n){background:#f5f0dc;color:#8b855f;border-color:#ebe4c9}
+
+/* Bounded collection rendering. */
+body[data-edition] .graph-host .core-wave,body[data-edition] .graph-host .outline-ripple{animation:none!important}
+body[data-edition] .graph-host .world-bg{fill:transparent!important;filter:none!important}
+body[data-edition] .map-exploration-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+body[data-edition] .exploration-instruction{flex:1 0 100%}
+body[data-edition] .exploration-previous{font:inherit;border:1px solid #c7d2b0;border-radius:999px;background:#f4f1e3;color:#5c7549;padding:7px 12px;cursor:pointer}
+body[data-edition] .graph-host .specimen-art,body[data-edition] .graph-host .fresh-sprout{filter:none!important}
+
+.source-page-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0}.source-page-nav button,.source-page-nav select{font:inherit;font-size:11px;border:1px solid #d8dfc5;background:#f5f2e5;color:#587348;border-radius:8px;padding:6px}.source-page-nav select{flex:1;min-width:0}.reader-fragment{content-visibility:auto;contain-intrinsic-size:auto 110px}
+
+/* Expanded quantitative overview. */
+.topic-count{fill:#547444;stroke:#fbf8ea;paint-order:stroke fill;font-weight:650}
+.overview-domain-legend{position:absolute;left:12px;right:12px;bottom:54px;display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:5px;z-index:3;max-height:28%;overflow:auto;padding:8px;border:1px solid #d8dfc5;border-radius:12px;background:#faf7e9ed}
+.overview-domain-legend[hidden]{display:none}.overview-domain-item{display:flex;justify-content:space-between;align-items:center;gap:5px;min-width:0;border:0!important;background:transparent!important;border-radius:5px;padding:5px 6px!important;font-size:11px!important;color:#527144;text-align:left;cursor:pointer}.overview-domain-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.overview-domain-item strong{flex:none;font-size:11px}.overview-domain-item:hover{background:#eaf0de!important}
+
+/* The map and its details remain side by side at every native sidebar width. */
+body[data-edition][data-screen=garden]{height:100dvh;overflow:hidden;display:flex;flex-direction:column;padding-left:0}
+body[data-edition][data-screen=garden]>header{flex:none;position:relative}
+body[data-edition][data-screen=garden]>main{flex:1;min-height:0;padding:8px!important;max-width:none!important;width:100%;box-sizing:border-box}
+body[data-edition][data-screen=garden] .workbench{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important;height:100%;padding:0!important}
+body[data-edition][data-screen=garden].reader-open .workbench{grid-template-columns:minmax(0,1fr) clamp(180px,34vw,350px)!important}
+body[data-edition][data-screen=garden] :is(.explorer,#garden-surface){height:100%;display:flex;flex-direction:column;min-height:0;min-width:0}
+body[data-edition][data-screen=garden] .toolbar{flex:none;transform:none!important;padding:6px 10px}
+body[data-edition][data-screen=garden] .toolbar [role=tablist]{display:flex!important;gap:12px}
+body[data-edition][data-screen=garden] .stage{flex:1;height:auto!important;min-height:0!important;min-width:0}
+body[data-edition][data-screen=garden] #chart{height:100%!important;min-height:0!important}
+body[data-edition][data-screen=garden] :is(.frame-map-hint,.plot-heading,.frame-reader-pill,.journal-nav){display:none!important}
+body[data-edition][data-screen=garden] #reader{display:none!important}
+body[data-edition][data-screen=garden].reader-open.reader-open #reader{display:block!important;position:relative!important;inset:auto!important;min-width:0!important;width:auto!important;height:100%!important;max-height:100%!important;box-sizing:border-box;margin:0!important;overflow:auto;overscroll-behavior:contain;z-index:5;background:#fffef7;border:1px solid #dce3cc;border-radius:16px;padding:14px!important;box-shadow:none!important}
+body[data-edition][data-screen=garden].reader-open .frame-reader-close{display:block;position:sticky;float:right;top:0;z-index:2;border:1px solid #dce3cc;border-radius:14px;padding:5px 12px;background:#f7f5e7}
+@media(max-width:460px){body[data-edition][data-screen=garden].reader-open .workbench{grid-template-columns:minmax(0,1fr) 180px!important}body[data-edition][data-screen=garden] .toolbar{padding-inline:4px}body[data-edition][data-screen=garden] .toolbar [role=tab]{font-size:11px}}
+
+/* The map itself carries the overview; no duplicate card below it. */
+.overview-domain-legend{display:none!important}
+
+/* Compact hover previews; camera animation is owned by the renderer. */
+#tooltip{width:208px!important;max-width:calc(100% - 16px)!important;max-height:220px;overflow:hidden;font-size:11px;padding:9px!important}
+#tooltip>img{max-height:72px!important;object-fit:cover}
+#tooltip .tooltip-intro{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fragment-pop{width:230px!important;max-width:calc(100% - 16px)!important;padding:10px!important;font-size:11px!important}
+.fragment-pop .fp-cover{width:48px!important;height:48px!important}
+.fragment-pop .fp-point{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media(prefers-reduced-motion:no-preference){.garden-node{transition:opacity 160ms ease}.graph-host{animation:map-enter 260ms ease}.fragment-pop,#tooltip{animation:map-enter 140ms ease}@keyframes map-enter{from{opacity:0}to{opacity:1}}}

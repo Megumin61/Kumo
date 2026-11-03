@@ -80,7 +80,7 @@
 
   function findXPostMedia(text, sourceId) {
     if (!/^\d{1,25}$/.test(String(sourceId))) throw new Error('invalid_x_status_id');
-    const normalized = String(text || '').replace(/\\u002F/gi, '/').replace(/\\\//g, '/').replace(/&quot;/g, '"');
+    const normalized = String(text || '').replace(/\\u002F/gi, '/').replace(/\\\//g, '/').replace(/\\"/g, '"').replace(/&quot;/g, '"');
     const matches = [...normalized.matchAll(/(?:"?expanded_url"?)\s*:\s*"(https:\/\/(?:x|twitter)\.com\/[^"\s]+\/status\/(\d+)\/(?:video|photo)\/(\d+))"/g)];
     const media = [];
     for (let index = 0; index < matches.length; index++) {

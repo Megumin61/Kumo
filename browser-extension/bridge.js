@@ -1,85 +1,79 @@
-(function (scope) {
-  const ORIGIN = typeof location !== 'undefined' && location.protocol === 'http:' && location.hostname === '127.0.0.1' ? location.origin : 'http://127.0.0.1:43789';
+(function(scope){
+ 'use strict';
+ let cached=null,pending=null,rootOverride=null,generation=0,forceScan=false;
+ const assets=new Map(),loading=new Map();
+ const array=v=>Array.isArray(v)?v:[];
+ const digest=async value=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(n=>n.toString(16).padStart(2,'0')).join('');
+ function parts(relative){const p=String(relative).split('/');if(!p.length||p.some(v=>!v||v==='.'||v==='..'||/[\\:*?"<>|]/.test(v)))throw Error('无效资料路径');return p;}
+ async function directory(root,path,create=false){let d=root;for(const p of parts(path))d=await d.getDirectoryHandle(p,{create});return d;}
+ async function file(root,path){const p=parts(path),name=p.pop();return (await (p.length?await directory(root,p.join('/')):root).getFileHandle(name)).getFile();}
+ async function read(root,path,optional=false){try{return await (await file(root,path)).text();}catch(e){if(optional&&e.name==='NotFoundError')return null;throw e;}}
+ async function json(root,path,optional=false){const text=await read(root,path,optional);return text===null?null:JSON.parse(text.replace(/^\uFEFF/,''));}
+ async function write(root,path,value){if(!await scope.KumoStorage.ensurePermission(root,{request:false}))throw Error('需要恢复写入授权，请打开资料库连接页；不用重新选择原文件夹。');const p=parts(path),name=p.pop(),d=p.length?await directory(root,p.join('/'),true):root,h=await d.getFileHandle(name,{create:true}),w=await h.createWritable();try{await w.write(typeof value==='string'?value:JSON.stringify(value,null,2));await w.close();}catch(e){await w.abort().catch(()=>{});throw e;}}
+ async function root(){const h=rootOverride||await scope.KumoStorage.getHandle('library');if(!h)throw Error('请先选择原资料文件夹');if(await h.queryPermission({mode:'read'})!=='granted')throw Error('资料文件夹需要重新授权，请点击重新授权');return h;}
+ function invalidateCache(broadcast=false){for(const url of assets.values())URL.revokeObjectURL(url);assets.clear();loading.clear();cached=null;forceScan=true;generation++;if(broadcast)localStorage.setItem('kumo-directory-revision',Date.now()+'-'+Math.random());}
+ scope.addEventListener?.('storage',event=>{if(event.key==='kumo-directory-revision')invalidateCache();if(event.key==='kumo-library-cache-revision'){cached=null;forceScan=false;generation++;scope.dispatchEvent?.(new CustomEvent('kumo:library-updated'));}});
+ scope.addEventListener?.('pagehide',()=>{for(const url of assets.values())URL.revokeObjectURL(url);assets.clear();});
+ async function connect({forcePick=false,handle:providedHandle=null}={}){
+  // Reuse the persisted handle. A browser permission prompt is not a new folder selection.
+  let h=providedHandle||(forcePick?null:rootOverride||await scope.KumoStorage.getHandle('library'));
+  if(h){const options={mode:'readwrite'};if(await h.queryPermission(options)!=='granted'&&await h.requestPermission(options)!=='granted')throw Error('未获得资料文件夹权限；原目录已记住，可以再次点击重新授权。');}
+  else h=await scope.KumoStorage.pickDirectory('library');
+  if(!h)return null;rootOverride=h;invalidateCache(true);return status();
+ }
 
-  async function request(path, options = {}, timeout = 900) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
-    try {
-      const response = await fetch(`${ORIGIN}${path}`, {...options, signal: controller.signal});
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || `Kumo bridge returned ${response.status}`);
-      return body;
-    } finally {
-      clearTimeout(timer);
-    }
+
+ const revision=()=>localStorage.getItem?.('kumo-directory-revision')||'';
+ const hydrate=entry=>({...entry,byId:new Map(entry.rows.map(r=>[r.id,r]))});
+ const signature=s=>JSON.stringify([s.rows.map(r=>[r.id,r.fingerprint]),s.tags,s.wiki]);
+ async function status(){try{const h=rootOverride||await scope.KumoStorage.getHandle('library');if(!h)return null;const read=await h.queryPermission({mode:'read'}),write=await h.queryPermission({mode:'readwrite'});if(read!=='granted'&&(read==='denied'||!await scope.KumoStorage.getLibraryCache?.(h)))return null;return {ok:true,service:'kumo-directory',apiVersion:0,transport:'filesystem',libraryRoot:h.name,cachedOnly:read!=='granted',capabilities:['library_browser',...(write==='granted'?['directory_write']:[])]};}catch{return null;}}
+ async function scan(h,version){const rows=[],warnings=[];
+  const wiki=await json(h,'wiki/kumo/state.json',true)||{revision:0,domains:[],topics:[],cards:[],relations:[]},registry=await json(h,'tags.json',true)||{tags:[]};if(!Array.isArray(registry.tags))throw Error('标签文件格式异常，未覆盖原文件');
+  for(const area of ['inbox','archive']){let d;try{d=await directory(h,area);}catch(e){if(e.name==='NotFoundError')continue;throw e;}const entries=[];for await(const e of d.values())if(e.kind==='directory')entries.push(e);
+   let next=0;await Promise.all(Array.from({length:Math.min(8,entries.length)},async()=>{while(next<entries.length){const e=entries[next++],relative=area+'/'+e.name;try{const meta=await json(h,relative+'/metadata.json'),source=await read(h,relative+'/source.md'),id=(await digest(relative)).slice(0,24),ledger=await json(h,'annotations/'+id+'.json',true),events=array(ledger?.events),fingerprint=await digest(source+'\n'+JSON.stringify(meta)+'\n'+JSON.stringify(events));rows.push({id,relative,meta,source,events,fingerprint});}catch(error){warnings.push({path:relative,error:error.message});}}}));
+  }
+  rows.sort((a,b)=>String(b.meta.capturedAt).localeCompare(String(a.meta.capturedAt))||a.id.localeCompare(b.id));
+  const tags=registry.tags.map(t=>({...t}));for(const r of rows)for(const t of r.events.at(-1)?.userTags??r.meta.userTags??[])if(!tags.some(v=>v.id===t.id))tags.push({...t,recovered:true});
+  const cards=new Map(array(wiki.cards).map(c=>[c.id,c]));
+  for(const r of rows){const c=cards.get(r.id);r.fresh=c?.fingerprint===r.fingerprint;if(r.fresh&&c.mediaFingerprint){const m=await json(h,'derived/media/'+r.id+'/manifest.json',true);r.fresh=m?.fingerprint===c.mediaFingerprint&&m.sourceFingerprint===r.fingerprint;}
+   const userTags=array(r.events.at(-1)?.userTags??r.meta.userTags).filter(t=>!tags.find(v=>v.id===t.id)?.deletedAt).map(t=>({id:t.id,label:tags.find(v=>v.id===t.id)?.label||t.label}));
+   const latestNote=[...r.events].reverse().find(e=>e.kind!=='collection');r.item={id:r.id,relativePath:r.relative,title:r.meta.title,url:r.meta.accessUrl||r.meta.url,platform:r.meta.platform,author:r.meta.author||'',authorUrl:r.meta.authorUrl||'',capturedAt:r.meta.capturedAt,userTags,userNote:latestNote?.note??r.meta.userNote??'',files:r.meta.files||{},stats:r.meta.stats||{},warnings:r.meta.warnings||[],excerpt:r.meta.excerpt||'',contentSummary:r.fresh?c.summary:'',contentKeywords:r.fresh?array(c.keywords):[],evidenceStatus:r.fresh?c.evidenceStatus||'limited':'uncompiled'};
   }
 
-  async function status() {
-    try {
-      return await request('/status', {}, 3000);
-    } catch {
-      return null;
-    }
+  const result={root:h,rows,wiki,tags,warnings,savedAt:Date.now(),revision:revision(),cachedOnly:false,byId:new Map(rows.map(r=>[r.id,r]))};
+  if(version===generation){cached=result;forceScan=false;try{await scope.KumoStorage.saveLibraryCache?.(h,{rows,wiki,tags,warnings,savedAt:result.savedAt,revision:result.revision});}catch{}}
+  return result;
+ }
+ function startScan(h,previous=null){const version=generation;if(pending?.version===version)return pending.promise;const job={version};job.promise=scan(h,version).then(result=>{if(previous&&version===generation&&signature(previous)!==signature(result)){scope.dispatchEvent?.(new CustomEvent('kumo:library-updated'));localStorage.setItem('kumo-library-cache-revision',Date.now()+'-'+Math.random());}return result;}).finally(()=>{if(pending===job)pending=null;});pending=job;return job.promise;}
+ async function snapshot(){
+  if(cached)return cached;
+  const h=rootOverride||await scope.KumoStorage.getHandle('library');if(!h){const e=Error('首次使用，请在设置中选择收藏位置。');e.code='KUMO_NOT_CONFIGURED';throw e;}
+  const permission=await h.queryPermission({mode:'read'});if(permission==='denied'){const e=Error('资料库读取权限已被拒绝，请在设置中检查。');e.code='KUMO_ACCESS_DENIED';throw e;}
+  let saved=null;try{saved=await scope.KumoStorage.getLibraryCache?.(h);}catch{}
+  if(saved&&(permission!=='granted'||!forceScan)){
+   cached=hydrate({...saved,cachedOnly:permission!=='granted'});
+   if(permission==='granted'&&(saved.revision!==revision()||Date.now()-saved.savedAt>30000))void startScan(h,cached).catch(()=>{});
+   return cached;
   }
-
-  async function encodeFile(file) {
-    if (file.content instanceof Blob) {
-      const bytes = new Uint8Array(await file.content.arrayBuffer());
-      let binary = '';
-      const chunkSize = 0x8000;
-      for (let index = 0; index < bytes.length; index += chunkSize) {
-        binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
-      }
-      return {name: file.name, type: file.type, encoding: 'base64', content: btoa(binary)};
-    }
-    return {name: file.name, type: file.type, encoding: 'utf8', content: String(file.content)};
-  }
-
-  async function save(folderName, files, clip) {
-    try {
-      return await request('/clips', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({schema: 'kumo-bridge-save-v1', folderName, clip: {url: clip.url, capturedUrl: clip.capturedUrl, contentHash: clip.contentHash, dedupeKey: clip.dedupeKey, dedupeSafeUrl: clip.dedupeSafeUrl}, files: await Promise.all(files.map(encodeFile))})
-      }, 180000);
-    } catch (error) {
-      if (error?.message === 'invalid_files') throw new Error('Kumo 本地桥接版本过旧，尚不支持图片素材目录。请重启本地桥接后再保存。');
-      throw error;
-    }
-  }
-
-  async function annotate(clip, note, userTags) {
-    return request('/annotations', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({clip: {url: clip.url, contentHash: clip.contentHash, dedupeKey: clip.dedupeKey, dedupeSafeUrl: clip.dedupeSafeUrl}, note, userTags})}, 10000);
-  }
-
-  async function resolveX(url, mediaIds) {
-    const result = await request('/x/resolve', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url, mediaIds})
-    }, 30000);
-    return result.videos || [];
-  }
-
-  function fetchXMedia(url, options) {
-    return fetch(`${ORIGIN}/x/media?url=${encodeURIComponent(url)}`, options);
-  }
-
-  async function startVideoJob(folderName, clip, files, note = '', downloadImages = true) {
-    return request('/x/jobs', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({schema: 'kumo-x-job-v1', folderName, clip, note, downloadImages, files: await Promise.all(files.map(encodeFile))})
-    }, 30000);
-  }
-
-  const videoJob = id => request(`/x/jobs/${encodeURIComponent(id)}`, {}, 5000);
-
-  const library = filters => request(`/library?${new URLSearchParams(filters || {})}`, {}, 10000);
-  const item = id => request(`/library/items/${encodeURIComponent(id)}`, {}, 10000);
-  const asset = (id, name) => `${ORIGIN}/library/items/${encodeURIComponent(id)}/${name}`;
-  const tags = () => request('/tags', {}, 5000);
-  const updateTag = input => request('/tags', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(input)}, 5000);
-  const setCollection = (clip, collectionId) => request('/annotations', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({clip, kind:'collection', collectionId})},10000);
-  const knowledge=()=>request('/knowledge',{},30000);
-  const knowledgeFocus=options=>request('/knowledge/focus?'+new URLSearchParams(options||{}),{},30000);
-  const knowledgeAtlas=()=>request('/knowledge/atlas',{},30000);
-  scope.KumoBridge = {status, save, annotate, setCollection, resolveX, fetchXMedia, startVideoJob, videoJob, library, item, asset, tags, updateTag,knowledge,knowledgeFocus,knowledgeAtlas};
+  if(permission!=='granted'){const e=Error('请在设置中恢复资料库访问；原位置已记住，无需重选。');e.code='KUMO_NEEDS_ACCESS';throw e;}
+  return startScan(h);
+ }
+ function overview(s){const items=s.rows.map(r=>r.item),covers=values=>values.filter(v=>array(v.files.images).length||array(v.files.frames).length).slice(0,4);return {collectionCounts:s.tags.map(t=>({...t,count:items.filter(v=>v.userTags.some(x=>x.id===t.id)).length,covers:covers(items.filter(v=>v.userTags.some(x=>x.id===t.id)))})),unclassifiedCount:items.filter(v=>!v.userTags.length).length,unclassifiedCovers:covers(items.filter(v=>!v.userTags.length))};}
+ async function library({q='',tag='',domain='',offset=0,limit=100}={},options={}){if(options.fresh)invalidateCache();const s=await snapshot();let items=s.rows.map(r=>r.item);if(q)items=items.filter(v=>[v.title,v.userNote,...v.contentKeywords,...v.userTags.map(t=>t.label)].join(' ').toLowerCase().includes(q.toLowerCase()));if(tag)items=items.filter(v=>tag==='__unclassified'?!v.userTags.length:v.userTags.some(t=>t.id===tag));if(domain)items=items.filter(v=>s.wiki.cards.find(c=>c.id===v.id)?.domainIds.includes(domain));return {ok:true,cachedOnly:s.cachedOnly,savedAt:s.savedAt,items:items.slice(+offset,+offset+Math.min(200,+limit)),total:items.length,allTotal:s.rows.length,...overview(s),tags:s.tags,domains:s.wiki.domains||[],warnings:s.warnings};}
+ async function tags(options={}){if(options.fresh)invalidateCache();const s=await snapshot();return {tags:overview(s).collectionCounts,unclassifiedCount:overview(s).unclassifiedCount,total:s.rows.length};}
+ async function item(id){const s=await snapshot(),r=s.byId.get(id);if(!r)throw Error('未找到收藏');return {ok:true,id,relativePath:r.relative,metadata:r.meta,events:r.events,source:r.source,effectiveUserTags:r.item.userTags,...r.item};}
+ async function lookup(clip){const s=await snapshot(),key=clip.dedupeKey||scope.KumoStorage.sourceKeyFromUrl(clip.url);return {ok:true,item:s.rows.find(r=>key&&(r.meta.dedupeKey||scope.KumoStorage.sourceKeyFromUrl(r.meta.url))===key||clip.url&&r.meta.url===clip.url)?.item||null};}
+ async function updateTag(input){const h=await root(),data=await json(h,'tags.json',true)||{schema:'kumo-tags-v1',tags:[]};if(!Array.isArray(data.tags))throw Error('标签文件格式异常');const label=String(input.label||'').trim();if(['add','rename'].includes(input.action)&&(!label||label.length>40||/[\x00-\x1f]/.test(label)))throw Error('无效合集名称');let t=data.tags.find(t=>t.id===input.id);if(input.action==='add'){t=data.tags.find(t=>t.label===label&&!t.hidden);if(!t){t={id:crypto.randomUUID(),label,hidden:false};data.tags.push(t);}}else{if(!t)throw Error('合集不存在');if(input.action==='rename'){if(data.tags.some(v=>v.id!==t.id&&v.label===label&&!v.hidden))throw Error('合集名称已存在');t.label=label;}else if(['hide','delete','restore'].includes(input.action)){t.hidden=input.action!=='restore';if(input.action==='delete')t.deletedAt=new Date().toISOString();if(input.action==='restore')delete t.deletedAt;}else throw Error('无效合集操作');}await write(h,'tags.json',data);invalidateCache(true);return t;}
+ async function annotate(clip,note,userTags,kind='note'){const s=await snapshot(),found=s.byId.get(clip.id)||s.rows.find(r=>(clip.dedupeKey&&r.meta.dedupeKey===clip.dedupeKey)||(clip.url&&r.meta.url===clip.url));if(!found)throw Error('未找到原收藏');const path='annotations/'+found.id+'.json',data=await json(s.root,path,true)||{schema:'kumo-annotations-v1',relativePath:found.relative,events:[]};if(!data.events.length&&typeof found.meta.userNote==='string')data.events.push({id:crypto.randomUUID(),capturedAt:found.meta.capturedAt,kind:'note',note:found.meta.userNote,userTags:found.meta.userTags||[]});data.events.push({id:crypto.randomUUID(),capturedAt:new Date().toISOString(),kind,note:String(note??''),userTags:userTags??found.item.userTags});await write(s.root,path,data);invalidateCache(true);return {saved:true,relativePath:found.relative};}
+ async function setCollection(clip,id){const s=await snapshot(),tag=s.tags.find(t=>t.id===id&&!t.deletedAt);if(id&&!tag)throw Error('合集不存在');return annotate(clip,'',tag?[{id:tag.id,label:tag.label}]:[],'collection');}
+ async function assetBlob(id,name){if(!/^(?:assets\/(?:image|frame)-\d{2}\.(?:jpg|jpeg|png|webp|gif|avif|img)|assets\/video-\d{2}\.(?:mp4|webm|mov|m4v)|viewport.png)$/.test(name))throw Error('无效媒体路径');const s=await snapshot(),r=s.byId.get(id);if(!r||![...array(r.meta.files?.images),...array(r.meta.files?.frames),...array(r.meta.files?.videos),r.meta.files?.screenshot].includes(name))throw Error('媒体不在清单中');const key=id+'/'+name;let saved;try{saved=await scope.KumoStorage.getCachedAsset?.(s.root,key,r.fingerprint);}catch{}if(saved)return saved;if(s.cachedOnly)throw Error('此媒体尚未保存在本地预览中，请在设置中恢复同步后读取。');const blob=await file(s.root,r.relative+'/'+name);void scope.KumoStorage.saveCachedAsset?.(s.root,key,r.fingerprint,blob)?.catch(()=>{});return blob;}
+ async function assetURL(id,name){const key=id+'/'+name;if(assets.has(key))return assets.get(key);if(loading.has(key)){const result=await loading.get(key);if(result)return result;}const version=generation,url=URL.createObjectURL(await assetBlob(id,name));if(version!==generation){URL.revokeObjectURL(url);throw Error('资料库已更新，请重试。');}assets.set(key,url);return url;}
+ function asset(id,name){const key=id+'/'+name;if(assets.has(key))return assets.get(key);const placeholder='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>')+'#kumo-'+encodeURIComponent(key);if(!loading.has(key)){loading.set(key,assetBlob(id,name).then(blob=>{const url=URL.createObjectURL(blob);assets.set(key,url);for(const node of document.querySelectorAll('[src="'+CSS.escape(placeholder)+'"],[href="'+CSS.escape(placeholder)+'"],[poster="'+CSS.escape(placeholder)+'"],[style*="'+CSS.escape(placeholder)+'"]'))for(const attr of ['src','href','style','poster']){const value=node.getAttribute(attr);if(value?.includes(placeholder))node.setAttribute(attr,value.replaceAll(placeholder,url));}scope.dispatchEvent(new CustomEvent('kumo:asset-ready'));return url;}).catch(()=>null).finally(()=>loading.delete(key)));}return placeholder;}
+ const boundImages=new WeakMap();let imageObserver=null;
+ function bindAsset(image,id,name){const load=()=>{void assetURL(id,name).then(url=>{if(image.isConnected)image.src=url;}).catch(()=>image.onerror?.());};image.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>');if(typeof IntersectionObserver==='undefined'){load();return;}imageObserver||=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){imageObserver.unobserve(entry.target);const task=boundImages.get(entry.target);boundImages.delete(entry.target);task?.();}},{rootMargin:'200px'});boundImages.set(image,load);imageObserver.observe(image);}
+ function descendants(nodes,id,parent){const result=new Set([id]);for(let n=0;n<nodes.length;n++)for(const v of nodes)if(result.has(v[parent]))result.add(v.id);return result;}
+ async function knowledge(){const s=await snapshot(),fresh=new Set(s.rows.filter(r=>r.fresh).map(r=>r.id)),cards=array(s.wiki.cards),domains=array(s.wiki.domains),topics=array(s.wiki.topics),nodes=[...domains.map(n=>({...n,kind:'domain'})),...topics.map(n=>({...n,kind:'topic'}))].map(n=>{const ids=descendants(n.kind==='domain'?domains:topics,n.id,n.kind==='domain'?'parentDomainId':'parentTopicId'),relevant=cards.filter(c=>array(n.kind==='domain'?c.domainIds:c.topicIds).some(id=>ids.has(id)));return {...n,sourceCount:relevant.filter(c=>fresh.has(c.id)).length,summaryNeedsReview:relevant.some(c=>!fresh.has(c.id))};});return {cachedOnly:s.cachedOnly,savedAt:s.savedAt,revision:s.wiki.revision||0,total:s.rows.length,compiled:fresh.size,indexOnly:cards.filter(c=>fresh.has(c.id)&&c.evidenceStatus==='index_only').length,nodes,cards:cards.map(c=>({...c,stale:!fresh.has(c.id)})),sources:s.rows.map(r=>({...r.item,collections:r.item.userTags,compiled:r.fresh})),relations:array(s.wiki.relations).filter(r=>fresh.has(r.from)&&fresh.has(r.to)),warnings:s.warnings};}
+ // Compatibility name only: every operation above reads/writes authorized files; no HTTP.
+ scope.KumoBridge={transport:'filesystem',status,connect,library,tags,item,lookup,updateTag,annotate,setCollection,asset,assetURL,assetBlob,bindAsset,knowledge,invalidateCache};
+ scope.KumoDirectory={...scope.KumoBridge,snapshot};
 })(globalThis);

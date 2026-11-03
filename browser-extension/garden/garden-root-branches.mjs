@@ -1,4 +1,17 @@
 import {hashSeed} from './garden-life.mjs';
+import {envelopeAt} from './content-contours.mjs';
+
+// Trim static roots at the content boundary instead of repainting an SVG mask
+// over the entire garden whenever the camera moves.
+export function trimRootAtColony(g,hub){
+ const point=t=>{const u=1-t;return [u**3*g.from[0]+3*u*u*t*g.c1[0]+3*u*t*t*g.c2[0]+t**3*g.to[0],u**3*g.from[1]+3*u*u*t*g.c1[1]+3*u*t*t*g.c2[1]+t**3*g.to[1]];};
+ const tilt=-(hub.plot?.tilt||0)*Math.PI/180,c=Math.cos(tilt),s=Math.sin(tilt);
+ const inside=t=>{const p=point(t),dx=p[0]-hub.x,dy=p[1]-hub.y-(hub.plot?.cy||0),x=dx*c-dy*s,y=dx*s+dy*c,r=envelopeAt(hub.plot?.envelope,Math.atan2(y,x))||hub.size/2+25;return Math.hypot(x,y)<r*1.025;};
+ let lo=0,hi=1;for(let i=1;i<=48;i++)if(inside(i/48)){lo=(i-1)/48;hi=i/48;break;}
+ for(let i=0;i<12;i++){const m=(lo+hi)/2;if(inside(m))hi=m;else lo=m;}
+ const t=lo,lerp=(a,b)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],a=lerp(g.from,g.c1),b=lerp(g.c1,g.c2),c2=lerp(g.c2,g.to),ab=lerp(a,b),bc=lerp(b,c2),end=lerp(ab,bc);
+ return {...g,d:'M '+g.from.join(' ')+' C '+a.join(' ')+' '+ab.join(' ')+' '+end.join(' '),tip:'',tipLeaves:''};
+}
 // A gently bowed shoot, with an asymmetric tangent and leaves resting on the curve.
 export function rootStemGeometry(core,hub){
  const dx=hub.x-core.x,dy=hub.y-core.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d,nx=-uy,ny=ux,seed=hashSeed(hub.key||hub.x+':'+hub.y),start=Math.min(130,d*.18),from=[core.x+ux*start,core.y+uy*start],to=[hub.x,hub.y],reach=d-start;

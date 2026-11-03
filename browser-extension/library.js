@@ -6,9 +6,17 @@ let offset = 0, epoch = 0, filter = '', directory = location.hash === '#collecti
 const positions = new Map();
 let detailReturnPosition=0;
 let disconnected=false;
+let navigationKey='';
 function closeDetail(){byId('detail').hidden=true;document.body.classList.remove('reading');detailEpoch++;byId('assets').querySelectorAll('video').forEach(v=>{v.pause();v.removeAttribute('src');v.load();});window.scrollTo(0,detailReturnPosition);trigger?.focus({preventScroll:true});}
 function detailView(view){byId('article-body').hidden=view!=='body';byId('comments-view').hidden=view!=='comments';document.querySelectorAll('#detail-tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));}
-function renderDiscussion(container,values,empty){container.replaceChildren();if(!values.length){container.append(el('p',empty,'muted'));return;}for(const value of values.slice(0,100)){const card=el('article','','discussion-card');const name=typeof value.author==='string'?value.author.trim():'';if(name&&!/^(未记录作者|示例作者|unknown)$/i.test(name)){const author=el('strong',name),url=safeUrl(value.authorUrl);if(url){const link=el('a',name);link.href=url;link.target='_blank';link.rel='noopener noreferrer';card.append(link);}else card.append(author);}if(value.likes?.raw)card.append(el('span',value.likes.raw+' 赞','muted'));card.append(el('p',value.text||value.content||''));container.append(card);}}
+function renderDiscussion(container,values,empty){container.replaceChildren();if(!values.length){container.append(el('p',empty,'muted'));return;}for(const value of values.slice(0,5)){
+ const card=el('article','','discussion-card'),avatar=el('span',(value.author||'?').slice(0,1),'discussion-avatar'),body=el('div','','discussion-body'),head=el('div','','discussion-head');
+ if(safeUrl(value.avatar)){const img=el('img');img.src=safeUrl(value.avatar);img.alt='';img.loading='lazy';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>avatar.replaceChildren(document.createTextNode((value.author||value.handle||'?').slice(0,1))),{once:true});avatar.replaceChildren(img);}const author=el('a',value.author||value.handle||'未记录用户');const profile=safeUrl(value.authorUrl);if(profile){author.href=profile;author.target='_blank';author.rel='noopener noreferrer';}head.append(author);if(value.handle)head.append(el('span','@'+value.handle,'muted'));if(value.isAuthor)head.append(el('span','作者','discussion-author'));body.append(head);
+ if(value.replyToId)body.append(el('div','回复原帖','discussion-reply'));body.append(el('p',value.text||value.content||''));
+ const media=el('div','','discussion-media');for(const item of value.media||[]){const url=safeUrl(typeof item==='string'?item:item.url);if(!url)continue;if(item.kind==='video'&&safeUrl(item.videoUrl)){const video=el('video');video.src=safeUrl(item.videoUrl);video.poster=url;video.controls=true;video.preload='none';media.append(video);}else{const link=el('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';const img=el('img');img.src=url;img.alt='评论配图';img.loading='lazy';img.referrerPolicy='no-referrer';link.append(img);media.append(link);}}if(media.children.length)body.append(media);
+ const footer=el('div','','discussion-footer');footer.append(el('span','♡ '+(value.likes?.raw??value.likes?.value??'—')),el('span','回复 '+(value.replyCount??'—')));if(value.publishedAt)footer.append(el('span',new Date(value.publishedAt).toLocaleDateString()));if(safeUrl(value.url)){const original=el('a','查看原回复');original.href=safeUrl(value.url);original.target='_blank';original.rel='noopener noreferrer';footer.append(original);}body.append(footer);card.append(avatar,body);container.append(card);
+ }container.append(el('p','保存时页面可读取的前 5 条回复；顺序与数量不代表全部或全站热评。媒体按原地址预览，未下载的媒体需联网。','discussion-coverage'));}
+
 document.querySelectorAll('#detail-tabs button').forEach(b=>b.onclick=()=>detailView(b.dataset.view));
 const membership = el('div','','row'), collectionSelect = el('select'), assign = el('button','确认','quiet');
 collectionSelect.id = 'detail-collection-select'; collectionSelect.setAttribute('aria-label','所属合集'); assign.id = 'assign-collection';
@@ -25,7 +33,7 @@ function renderBody(source) {
 function remember() { if(!document.body.classList.contains('reading'))positions.set(directory ? 'directory' : filter, window.scrollY); }
 function imageFor(item, className, assetName = '') {
   const name = assetName || KumoUI.preview(item); if (!KumoUI.validAsset(name)) return null;
-  const image = el('img', '', className); image.alt = item.title || '媒体预览'; image.loading = 'lazy'; image.src = KumoBridge.asset(item.id, name); image.onerror = () => {const parent=image.parentElement;image.remove();if(parent?.classList.contains('folder-cover')){parent.dataset.tiles=String(parent.querySelectorAll('img').length);if(!parent.querySelector('img'))parent.replaceChildren(KumoUI.icon('bookmark'));}else if(parent?.classList.contains('thumb-wrap')){const count=parent.querySelectorAll('img').length;if(!count)parent.remove();else{parent.dataset.tiles=String(count);if(count===1)parent.classList.remove('thumb-collage');}}}; return image;
+  const image = el('img', '', className); image.alt = item.title || '媒体预览'; image.loading = 'lazy'; image.decoding='async';if(KumoBridge.bindAsset)KumoBridge.bindAsset(image,item.id,name);else image.src=KumoBridge.asset(item.id,name); image.onerror = () => {const parent=image.parentElement;image.remove();if(parent?.classList.contains('folder-cover')){parent.dataset.tiles=String(parent.querySelectorAll('img').length);if(!parent.querySelector('img'))parent.replaceChildren(KumoUI.icon('bookmark'));}else if(parent?.classList.contains('thumb-wrap')){const count=parent.querySelectorAll('img').length;if(!count)parent.remove();else{parent.dataset.tiles=String(count);if(count===1)parent.classList.remove('thumb-collage');}}}; return image;
 }
 function resourceText(item) {
   const s = item.stats || {}; const images = Number(s.images || 0), videos = Number(s.videos || 0);
@@ -36,9 +44,13 @@ function paintNavigation(result) {
   document.body.classList.toggle('directory',directory); byId('brand-header').hidden=!directory;
   byId('view-title').textContent = directory ? '我的收藏' : filter ? collections.find(t => t.id === filter)?.label || '未分类' : '我的收藏';
   byId('collections-toggle').textContent = directory ? '全部收藏 ›' : '我的合集 ›';
+  const nextKey=JSON.stringify([directory,result.allTotal,result.unclassifiedCount,result.collectionCounts||result.tags,result.domains]);
+  document.querySelectorAll('#collection-filters [data-collection-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.collectionFilter===filter)));
+  byId('folders').hidden = !directory; byId('items').hidden = directory; byId('more').hidden = directory || offset >= result.total;
+  if(nextKey===navigationKey)return;navigationKey=nextKey;
   byId('collection-filters').replaceChildren();
   if (!directory) for (const c of [{id:'',label:'全部',count:result.allTotal}, ...collections, {id:'__unclassified',label:'未分类',count:result.unclassifiedCount}]) {
-    const b = el('button', c.label + (c.count != null ? ' ' + c.count : ''), 'chip'); b.title = c.label; b.type = 'button'; b.setAttribute('aria-pressed', String(filter === c.id));
+    const b = el('button', c.label + (c.count != null ? ' ' + c.count : ''), 'chip'); b.title = c.label; b.type = 'button';b.dataset.collectionFilter=c.id;b.setAttribute('aria-pressed', String(filter === c.id));
     b.onclick = () => { remember(); filter = c.id; void load(); };
     if(c.id&&c.id!=='__unclassified'){const wrap=el('span','','tag-with-delete'),remove=el('button','×','tag-delete');remove.type='button';remove.setAttribute('aria-label','删除标签 '+c.label);remove.onclick=()=>deleteCollection(c);wrap.append(b,remove);byId('collection-filters').append(wrap);}else byId('collection-filters').append(b);
   }
@@ -75,16 +87,18 @@ function paintNavigation(result) {
 async function load(reset = true) {
   const requestId = ++epoch;
   try {
-    const result = await KumoBridge.library({q:directory?'':byId('search').value,tag:directory?'':filter,domain:directory?'':byId('domain-filter').value,offset:reset||directory?0:offset,limit:40});
+    const result = await KumoBridge.library({q:directory?'':byId('search').value,tag:directory?'':filter,domain:directory?'':byId('domain-filter').value,offset:reset||directory?0:offset,limit:directory?1:40});
     if (requestId !== epoch) return;
     disconnected=false;byId('connection-help').hidden=true;
     if(reset){offset=0;number=0;records=[];byId('items').replaceChildren();}
-    for (const item of result.items) {
+    const cards=document.createDocumentFragment();
+    for (const item of directory?[]:result.items) {
       records.push(item);++number;
-      const b = el('button','','card'); b.type = 'button'; b.dataset.item = item.id;
+      const b = el('article','','card');b.tabIndex=0;b.setAttribute('role','button');b.setAttribute('aria-label','查看收藏：'+KumoUI.displayTitle(item));b.dataset.item = item.id;
       const thumb=imageFor(item,'thumb');
       if(thumb){const wrap=el('span','','thumb-wrap');wrap.append(thumb);if(item.stats?.videos)wrap.append(el('span','▶','play'));b.append(wrap);}
-      const body = el('span','','card-body');const heading=el('span',KumoUI.displayTitle(item),'card-title');heading.title=item.title||'';body.append(heading);
+      const body = el('span','','card-body'),headingRow=el('span','','card-heading');const heading=el('span',KumoUI.displayTitle(item),'card-title');heading.title=item.title||'';headingRow.append(heading);
+      const source=safeUrl(KumoSourceLinks.sourceUrl(item));if(source){const link=el('a','','source-icon');link.href=source;link.target='_blank';link.rel='noopener noreferrer';link.title='打开原文';link.setAttribute('aria-label','打开原文：'+KumoUI.displayTitle(item));link.append(KumoUI.icon('external'));link.onclick=event=>event.stopPropagation();headingRow.append(link);}body.append(headingRow);
       const meta = el('span','','card-meta'), mark = el('span','','platform-mark'); KumoUI.platform(mark,item.platform || '网页'); meta.append(mark,document.createTextNode(item.author||'')); body.append(meta);
       const tagRow=el('span','','card-tags');for(const keyword of KumoUI.contentKeywords(item.contentKeywords))tagRow.append(el('span',keyword,'card-tag content-keyword'));tagRow.setAttribute('aria-label','AI 内容关键词');if(tagRow.children.length)body.append(tagRow);
       if(item.contentSummary)body.append(el('span','摘要 · '+item.contentSummary,'card-note content-summary'));
@@ -95,16 +109,24 @@ async function load(reset = true) {
       if(item.stats?.videos){const badge=el('span','','resource-badge');badge.append(KumoUI.icon('video'),el('span',String(item.stats.videos)));resources.append(badge);}
       if(item.stats?.images){const badge=el('span','','resource-badge');badge.append(KumoUI.icon('image'),el('span',String(item.stats.images)));resources.append(badge);}
       const arrow=KumoUI.icon('chevron');arrow.classList.add('card-arrow');
-      b.append(body,arrow,resources,el('span',KumoUI.relativeDate(item.capturedAt),'card-date')); b.onclick = () => { trigger = b; void show(item.id); }; byId('items').append(b);
+      b.append(body,arrow,resources,el('span',KumoUI.relativeDate(item.capturedAt),'card-date'));const open=()=>{trigger=b;void show(item.id);};b.onclick=event=>{if(!event.target.closest('a'))open();};b.onkeydown=event=>{if(event.target===b&&['Enter',' '].includes(event.key)){event.preventDefault();open();}};cards.append(b);
     }
+    byId('items').append(cards);
     offset += result.items.length; paintNavigation(result);
-    status(result.total ? '' : '暂无匹配内容');
+    status(result.cachedOnly?'本地索引 · '+new Date(result.savedAt).toLocaleString():result.total?'':'暂无匹配内容');byId('library-status').title=result.cachedOnly?'当前展示上次保存在此浏览器中的收藏；在设置中恢复权限后可同步文件夹变化。':'';
     if (reset&&!document.body.classList.contains('reading')) window.scrollTo(0,positions.get(directory ? 'directory' : filter) || 0);
-  } catch(e) { if(requestId!==epoch)return;disconnected=true;byId('connection-help').hidden=false;status('资料库尚未连接或暂时不可用。已保存的收藏不会因此清空，可点击“刷新连接”重试。'); }
+  } catch(e) { if(requestId!==epoch)return;disconnected=true;byId('connection-help').hidden=false;const first=e.code==='KUMO_NOT_CONFIGURED';byId('setup-title').textContent=first?'选择你的收藏位置':'暂时无法读取收藏';byId('setup-description').textContent=first?'首次选定文件夹后，Kumo 会记住位置，之后直接打开收藏。':e.message||'请在设置中检查资料库权限。';byId('retry-library').textContent=first?'开始使用':'打开设置';status(''); }
 }
 async function deleteCollection(c){if(!confirm('删除“'+c.label+'”？收藏保留，仅移除该标签的归属。可在管理标签中撤销。'))return;try{await KumoBridge.updateTag({action:'delete',id:c.id});if(filter===c.id)filter='';await load();}catch(e){status('删除失败：'+e.message);}}
-byId('retry-library').onclick=()=>void load();
-setInterval(()=>{if(disconnected&&!document.hidden)void load();},15000);
+function refreshLibrary(){KumoBridge.invalidateCache();navigationKey='';return load();}
+byId('retry-library').onclick=()=>KumoStorage.openConnection();
+async function locationSettings(){try{const info=await KumoStorage.connectionState();byId('library-location').textContent=info.known?'已保存位置：'+info.name+(info.write==='granted'?' · 可以同步':' · 使用本地索引，授权后可同步'):'尚未选择收藏位置';byId('restore-library-access').hidden=info.write==='granted';}catch(e){byId('library-location').textContent=e.message;}}
+byId('library-settings-toggle').onclick=()=>{void locationSettings();byId('settings-dialog').showModal();};
+byId('sync-library-now').onclick=async()=>{const info=await KumoStorage.connectionState();if(info.read!=='granted'){await KumoStorage.openConnection();return;}await refreshLibrary();await locationSettings();};
+byId('restore-library-access').onclick=()=>KumoStorage.openConnection();byId('change-library-location').onclick=()=>KumoStorage.openConnection({change:true});
+window.addEventListener('storage',event=>{if(event.key==='kumo-directory-revision')void refreshLibrary();});
+window.addEventListener('kumo:library-updated',()=>void load());
+
 let detailEpoch = 0;
 async function show(id) {
   const requestId = ++detailEpoch;
@@ -114,6 +136,8 @@ async function show(id) {
     const mark=el('span','','platform-mark');KumoUI.platform(mark,meta.platform||'网页');byId('detail-meta').replaceChildren(mark,document.createTextNode([meta.author,KumoUI.relativeDate(meta.capturedAt)].filter(Boolean).join(' · ')));
     const tags = result.effectiveUserTags ?? result.events?.at(-1)?.userTags ?? meta.userTags ?? [];
     const url = safeUrl(KumoSourceLinks.sourceUrl({...meta,url:meta.url||result.url})); byId('original').hidden = !url; if (url) byId('original').href = url; else byId('original').removeAttribute('href');
+    const title=byId('detail-title');if(url){const link=el('a',KumoUI.displayTitle(meta),'detail-title-link');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.title='打开原文';title.replaceChildren(link);}
+    const topLink=byId('detail-original');topLink.hidden=!url;if(url)topLink.href=url;else topLink.removeAttribute('href');
     byId('original-hint').hidden=!/xiaohongshu\.com\/(?:explore|discovery\/item)\//.test(url)||KumoSourceLinks.hasAccessUrl(meta);
     renderBody(result.source);
     const discussion=[...(Array.isArray(meta.comments)?meta.comments:[]),...(Array.isArray(meta.authorFollowups)?meta.authorFollowups:[])].filter(Boolean);
@@ -138,7 +162,7 @@ async function show(id) {
       const video = name.startsWith('assets/video-'), media = el(video?'video':'img');
       if (video) { media.controls = true; media.preload = 'metadata'; const poster = KumoUI.preview({files}); if (poster) media.poster = KumoBridge.asset(id,poster); }
       else { media.alt = '保存的媒体 ' + name; media.loading = 'lazy'; }
-      media.src = KumoBridge.asset(id,name); media.onerror = () => { media.remove(); byId('detail-status').textContent = '该本地媒体读取失败，原帖链接仍可回溯。'; }; byId('assets').append(media);
+      media.src = video ? await KumoBridge.assetURL(id,name) : KumoBridge.asset(id,name); if(requestId!==detailEpoch)return; media.onerror = () => { media.remove(); byId('detail-status').textContent = '该本地媒体读取失败，原帖链接仍可回溯。'; }; byId('assets').append(media);
       if (video) byId('assets').append(el('p','本地视频 · ' + name.split('.').at(-1).toUpperCase()));
     }
     if (!files.videos?.length && meta.stats?.videos) byId('assets').append(el('p','视频尚未离线保存，请查看原帖或重新剪藏补全。','cover-errors'));
@@ -147,7 +171,7 @@ async function show(id) {
   } catch(e) { status('无法读取内容：' + e.message); }
 }
 byId('back').onclick = closeDetail;
-byId('settings').onclick=()=>byId('settings-dialog').showModal();byId('settings-close').onclick=()=>byId('settings-dialog').close();byId('list-back').onclick=()=>{remember();directory=true;filter='';void load();};
+byId('settings').onclick=()=>{void locationSettings();byId('settings-dialog').showModal();};byId('settings-close').onclick=()=>byId('settings-dialog').close();byId('list-back').onclick=()=>{remember();directory=true;filter='';void load();};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!byId('detail').hidden&&!byId('settings-dialog').open)closeDetail();});
 byId('edit-note').onclick = () => { byId('note-editor').hidden = false; byId('new-note').focus(); };
 assign.onclick = async () => {
@@ -167,13 +191,14 @@ byId('collection-form').onsubmit = async event => {
   const button = event.currentTarget.querySelector('button'); button.disabled = true;
   try { await KumoBridge.updateTag({action:'add',label}); byId('collection-form').hidden = true; byId('collection-name').value = ''; await load(); } catch(e) { status(e.message); } finally { button.disabled = false; }
 };
-byId('refresh').onclick = () => load(); byId('more').onclick = () => load(false); byId('domain-filter').onchange = () => load();
+byId('refresh').onclick = () => refreshLibrary(); byId('more').onclick = () => load(false); byId('domain-filter').onchange = () => load();
 let debounce; byId('search').oninput = () => { clearTimeout(debounce); debounce = setTimeout(()=>load(),200); };
 byId('organize').onclick = async () => {
   try { const connection = await KumoBridge.status(); if (!connection?.libraryRoot) throw new Error('请先连接知识库');
-    await navigator.clipboard.writeText('使用 Kumo Skill 整理知识库：' + connection.libraryRoot + '。先读 ORGANIZATION.md、LIBRARY.md 和 organization.json，按任务建立领域索引，原件与笔记保留；不要把收藏当长期偏好或把视频存在当完整理解。');
+    await navigator.clipboard.writeText('使用 Kumo AI 端插件或直接按 KUMO.md 整理资料库：' + connection.libraryRoot + '。先读 KUMO.md、LIBRARY.md 和相关主题，核对待编译材料；原件与笔记保留；不要把收藏当长期偏好或把视频存在当完整理解。');
     status('整理指令已复制；请粘贴到 Codex 执行，没有自动调用模型。');
   } catch(e) { status('未能复制：' + e.message); }
 };
-void KumoUI.ensureCollections(KumoBridge).catch(()=>{}).then(async()=>{await load();const match=location.hash.match(/^#item=([a-f0-9]{24})$/);if(match)await show(match[1]);});
+byId('detail-original').append(KumoUI.icon('external'));
+void (async()=>{await load();if(!disconnected&&!collections.length){await KumoUI.ensureCollections(KumoBridge).catch(()=>{});await refreshLibrary();}const match=location.hash.match(/^#item=([a-f0-9]{24})$/);if(match)await show(match[1]);})();
 

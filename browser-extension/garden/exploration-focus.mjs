@@ -12,8 +12,8 @@ export function explorationFocus(layout,selected=ROOT,{mode='field',hover=null,r
   const current=layout.navigation?.current||ROOT,active=new Set([ROOT,...layout.navigation?.path||[],...layout.navigation?.items?.map(r=>r.key)||[]]);
   for(const p of all){add(p,active.has(p.key)||current===ROOT&&!p.discovery&&!p.relatedPeek);if(p.relatedPeek){related.add(p.key);label.add(p.key);}}
   if(selection?.record.kind==='source'){primary.clear();for(const k of [ROOT,...layout.navigation?.path||[],selection.key])primary.add(k);for(const k of actualRelated(layout,[selection.key],2))related.add(k);}
-  for(const p of all)if(primary.has(p.key))label.add(p.key);
-  return finish(current===ROOT?'点一个领域，沿叶脉慢慢展开':'沿主线继续；旁枝只展示当前层级的碎片');
+  if(layout.navigation?.tree)for(const p of all)if(p.record.kind!=='source'||layout.navigation.focusKeys.includes(p.key)){primary.add(p.key);label.add(p.key);}for(const p of all)if(primary.has(p.key))label.add(p.key);
+  return finish(layout.navigation?.tree?'点击领域或主题继续延伸 · 已展开 '+all.length+' 个节点':current===ROOT?'点一个领域，沿叶脉慢慢展开':'沿主线继续；旁枝只展示当前层级的碎片');
  }
  const hubs=all.filter(p=>!p.owner&&!p.discovery),owner=selection?(selection.owner||selection.key):null,content=all.filter(p=>p.owner&&!p.discovery&&p.record.kind!=='brand');
  for(const hub of hubs){add(hub,!selection||hub.key===owner);label.add(hub.key);}
@@ -37,7 +37,8 @@ export function explorationFocus(layout,selected=ROOT,{mode='field',hover=null,r
  for(const p of all)if(visible.has(p.key)&&(primary.has(p.key)||related.has(p.key))&&((p.record.kind!=='source'&&(selection||p.record.kind!=='topic'))||p.key===selected||related.has(p.key)))label.add(p.key);
  return finish(!selection?'点一片花圃，聚焦看里面的内容':selection.record.kind==='source'?'正在读这篇收藏；主题和所属领域保留在旁边':selection.record.kind==='topic'?'这个主题收着的帖子；点一篇继续读':'这片花圃的全部主题和帖子；点一篇继续读');
  function finish(hint){
-  if(mode==='field'){const window=sourceWindow(all,{density,selection,primary,related,reveal});if(window){for(const p of all)if(p.record.kind==='source'&&!window.keep.has(p.key)){visible.delete(p.key);primary.delete(p.key);related.delete(p.key);label.delete(p.key);}hiddenCount=window.hiddenCount;memories=memories.filter(k=>visible.has(k));hint=window.hint;}}
+  if(mode==='field'&&layout.displayWindow){const w=layout.displayWindow;hiddenCount=w.hiddenCount;hint=w.overview?w.total+' 篇收藏 · '+layout.points.size+' 个已展开节点':w.label+' · '+w.start+'–'+w.end+' / '+w.total+' 篇';for(const p of all)if(p.record.displayOnly){label.add(p.key);if(p.record.pageIndex===w.page)primary.add(p.key);}}
+  if(mode==='field'&&!layout.displayWindow&&!layout.full){const window=sourceWindow(all,{density,selection,primary,related,reveal});if(window){for(const p of all)if(p.record.kind==='source'&&!window.keep.has(p.key)){visible.delete(p.key);primary.delete(p.key);related.delete(p.key);label.delete(p.key);}hiddenCount=window.hiddenCount;memories=memories.filter(k=>visible.has(k));hint=window.hint;}}
   const hovering=hover&&layout.points.get(hover),hoverOwner=hovering&&!hovering.discovery&&hovering.record.kind!=='brand'?(hovering.owner||hovering.key):null,states=new Map(),hoverTopic=hovering&&hovering.owner&&hovering.record.kind==='topic'?hovering:null,hoverMembers=new Set(hoverTopic?.record.members||[]);if(hoverTopic&&!selection)for(const k of hoverMembers)if(visible.has(k))label.add(k);
   for(const p of all){let opacity=1,role=primary.has(p.key)?'primary':related.has(p.key)?'related':'context';if(related.has(p.key))opacity=.85;else if(!primary.has(p.key))opacity=mode==='field'?(selection?(soft.has(p.key)?.55:selection.record.kind==='source'?.16:.2):.62):.24;
    if(p.discovery)opacity=p.key===selected?1:.58;

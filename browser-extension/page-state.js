@@ -2,6 +2,40 @@
 // Return only the current item's public content; never export account state.
 function readKumoPageState() {
   const url = new URL(location.href);
+  const xId = /(^|\.)(x|twitter)\.com$/.test(url.hostname) && url.pathname.match(/^\/[^/]+\/status\/(\d+)/)?.[1];
+  if (xId) {
+    // New X status shells serialize public post records inside JS string literals.
+    // Parse strings as JSON data only; never execute page scripts or collect account state.
+    const queue=[],records=new Map();let selected;
+    for(const script of document.querySelectorAll('script')) {
+      const text=script.textContent||'';if(text.length>8*1024*1024||!text.includes('media_entities2')&&!text.includes('full_text'))continue;
+      try{queue.push(JSON.parse(text));}catch{}
+      for(const match of text.matchAll(/"(?:\\.|[^"\\])*"/g)){if(match[0].length<50)continue;try{const value=JSON.parse(match[0]);if(typeof value==='string'&&value.startsWith('{'))queue.push(JSON.parse(value));}catch{}}
+    }
+    for(let index=0;index<queue.length&&index<12000;index++){
+      let item=queue[index];if(!item||typeof item!=='object')continue;
+      if(item.rest_id&&typeof item.legacy?.full_text==='string'&&!item.details){
+        const legacy=item.legacy,u=item.core?.user_results?.result||{},profile=u.core||u.legacy||{};
+        item={...item,details:{full_text:legacy.full_text,created_at_ms:Date.parse(legacy.created_at)||undefined},counts:{favorite_count:legacy.favorite_count,reply_count:legacy.reply_count,bookmark_count:legacy.bookmark_count},media_entities2:legacy.extended_entities?.media||[],url_entities:legacy.entities?.urls||[],core:{...item.core,user_results:{result:{core:{name:profile.name,screen_name:profile.screen_name},avatar:{image_url:u.avatar?.image_url||u.legacy?.profile_image_url_https||''}}}}};
+      }
+      if(item.rest_id&&typeof item.details?.full_text==='string')records.set(String(item.rest_id),item);
+      if(String(item.rest_id)===xId&&typeof item.details?.full_text==='string'){
+        const media=(item.media_entities2||[]).filter(m=>String(m.expanded_url||'').match(/\/status\/(\d+)\//)?.[1]===xId),images=[],videos=[];
+        for(const m of media){if(m.type==='photo')images.push({url:m.media_url_https,origin:'target_page_state'});else{const variants=(m.video_info?.variants||[]).filter(v=>v.content_type==='video/mp4'&&!/\/aud\/|\/0\/0\/|\/init[.-]/.test(v.url||'')).sort((a,b)=>(b.bitrate||0)-(a.bitrate||0));if(variants[0])videos.push({url:variants[0].url,poster:m.media_url_https,kind:'direct_file',type:'video/mp4',mediaId:m.id_str,origin:'target_page_state'});}}
+        selected={item,core:{description:item.details.full_text,images,videos}};
+      }
+      queue.push(...Object.values(item).filter(v=>v&&typeof v==='object'));
+    }
+    if(selected){
+      const authorOf=p=>p.core?.user_results?.result||{},mainAuthor=authorOf(selected.item).core?.screen_name;
+      const comments=[...records.values()].filter(p=>String(p.reply_to_results?.rest_id||p.legacy?.in_reply_to_status_id_str||'')===xId).slice(0,5).map((p,i)=>{
+        const u=authorOf(p),handle=u.core?.screen_name||'',text=(p.url_entities||[]).reduce((s,e)=>s.replaceAll(e.url,e.expanded_url||e.url),p.details.full_text),media=(p.media_entities2||[]).map(m=>({url:m.media_url_https,kind:m.type==='photo'?'image':'video',videoUrl:(m.video_info?.variants||[]).filter(v=>v.content_type==='video/mp4'&&!/\/aud\/|\/0\/0\//.test(v.url||'')).sort((a,b)=>(b.bitrate||0)-(a.bitrate||0))[0]?.url||''}));
+        return {sourceId:String(p.rest_id),replyToId:xId,url:'https://x.com/'+handle+'/status/'+p.rest_id,author:u.core?.name||handle,handle,authorUrl:'https://x.com/'+handle,avatar:u.avatar?.image_url||'',text,likes:{value:p.counts?.favorite_count||0,raw:String(p.counts?.favorite_count||0)},replyCount:p.counts?.reply_count||0,bookmarks:p.counts?.bookmark_count||0,capturedAt:new Date().toISOString(),publishedAt:p.details.created_at_ms?new Date(p.details.created_at_ms).toISOString():'',captureOrder:i+1,source:'public_reply_order',isAuthor:handle===mainAuthor,media};
+      });
+      return {sourceId:xId,core:selected.core,comments,authorFollowups:comments.filter(c=>c.isAuthor),discussionCoverage:{limit:5,captured:comments.length,order:'returned_page_order',complete:false}};
+    }
+    return {};
+  }
   const http = value => {
     try { const parsed = new URL(value, location.href); return /^https?:$/.test(parsed.protocol) ? parsed.href : ''; }
     catch { return ''; }

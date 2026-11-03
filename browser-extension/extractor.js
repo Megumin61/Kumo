@@ -537,6 +537,7 @@ async function extractKumoPage(pageState = {}) {
       authorFollowups.push({text, url: replyUrl, sourceId: replyId, source: 'author_thread_reply', media: [...new Set(media)], videoPosters: [...new Set(videoPosters)]});
     });
   }
+  if(x&&pageState.sourceId===sourceIdentity.sourceId&&Array.isArray(pageState.comments)){comments.splice(0,comments.length,...pageState.comments.slice(0,5));authorFollowups.splice(0,authorFollowups.length,...(pageState.authorFollowups||[]));}
   const published = meta('article:published_time') || jsonLd.datePublished || document.querySelector('time[datetime]')?.getAttribute('datetime') || '';
   const title = clean(coreState?.title || xhsNote?.title || (xhs && document.querySelector('#detail-title, .note-content .title')?.textContent) || meta('og:title') || jsonLd.headline || document.title).slice(0, 300);
   const canonicalCandidate = absolute(document.querySelector('link[rel="canonical"]')?.href || jsonLd.url || '');
@@ -586,13 +587,16 @@ async function extractKumoPage(pageState = {}) {
   if (content.length < minimumExpectedLength) warnings.push('extracted_content_is_short');
   if (xhs && !new URL(accessUrl).searchParams.get('xsec_token')) warnings.push('xiaohongshu_access_link_missing');
   if (xhs && !xhsBodyFound) warnings.push('xiaohongshu_note_body_not_found');
-  if (x && !preferredRoot) warnings.push('x_target_post_not_found');
+  if (x && !preferredRoot && !coreState?.description) warnings.push('x_target_post_not_found');
   if (!title) warnings.push('missing_title');
   if (!canonicalUrl) warnings.push('missing_canonical_url');
   const foundGalleryMedia = images.length + videos.filter(video => video.origin === 'xiaohongshu_gallery' || video.origin === 'video_element' || video.origin === 'source_element').length;
   if (xhsGallerySnapshot.expected && foundGalleryMedia < xhsGallerySnapshot.expected) warnings.push(`xiaohongshu_gallery_incomplete:${foundGalleryMedia}/${xhsGallerySnapshot.expected}`);
 
+  const captions=[];let captionCharacters=0;
+  for(const video of root.querySelectorAll('video')){try{for(const track of video.textTracks||[]){const cues=[];for(const cue of Array.from(track.cues||[]).slice(0,2000)){const text=String(cue.text||'').slice(0,3000);if(captionCharacters+text.length>200000)break;captionCharacters+=text.length;cues.push({start:cue.startTime,end:cue.endTime,text});}if(cues.length)captions.push({language:track.language,label:track.label,kind:track.kind,cues});}}catch{}}
   return {
+    captions,
     schema: 'kumo-clip-v1',
     extractorVersion: '0.8.2',
     id: `${capturedAt.slice(0, 10)}-${contentHash}`,
@@ -621,6 +625,7 @@ async function extractKumoPage(pageState = {}) {
     socialMetrics,
     comments,
     authorFollowups,
+    discussionCoverage: x ? pageState.discussionCoverage || {limit:5,captured:comments.length,order:"visible_page_order",complete:false} : undefined,
     socialCapturedAt: capturedAt,
     stats: {characters: content.length, images: images.length, videos: videos.length, comments: comments.length, expectedGalleryMedia: xhsGallerySnapshot.expected || null, foundGalleryMedia: xhsGallerySnapshot.expected ? foundGalleryMedia : null},
     contentHash,

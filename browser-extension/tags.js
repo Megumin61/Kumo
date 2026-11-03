@@ -44,9 +44,10 @@
   async function load(connected, {bridgeExpected=false}={}) {
     useBridge = connected;
     offline=!connected&&bridgeExpected;
-    if (connected) await KumoUI.ensureCollections(KumoBridge);
+    let overview;
+    if (connected){overview=await KumoBridge.tags();if(!overview.tags.length){await KumoUI.ensureCollections(KumoBridge);overview=await KumoBridge.tags({fresh:true});}}
     else if (!offline&&localStorage.getItem('kumo-tags') === null) localStorage.setItem('kumo-tags',JSON.stringify(KumoUI.presetCollections.map((label,index)=>({id:'kumo-preset-'+index,label}))));
-    if(connected){const overview=await KumoBridge.tags();values=overview.tags;unclassifiedCount=overview.unclassifiedCount??null;}
+    if(connected){values=overview.tags;unclassifiedCount=overview.unclassifiedCount??null;}
     else{values=JSON.parse(localStorage.getItem(offline?'kumo-bridge-tags-cache':'kumo-tags')||'[]');unclassifiedCount=null;}
     let recent=localStorage.getItem(frontKey)||localStorage.getItem(choiceKey)||localStorage.getItem(recentKey);
     if(connected&&recent!==unclassifiedId&&!values.some(tag=>!tag.hidden&&tag.id===recent)){recent=await inferRecent(values).catch(()=>null);if(recent)localStorage.setItem(recentKey,recent);}
@@ -77,6 +78,7 @@
       wrap.append(button,remove);list.append(wrap);
     }
 const unclassified=document.createElement('button');unclassified.type='button';unclassified.className='chip';unclassified.dataset.unclassified='true';unclassified.textContent='未分类';const count=document.createElement('span');count.className='tag-count';count.textContent=unclassifiedCount??'—';unclassified.append(count);unclassified.setAttribute('aria-pressed',String(selected.size===0));unclassified.onclick=()=>{initialized=true;selected.clear();rememberChoice(unclassifiedId);promote(unclassifiedId);list.querySelectorAll('.chip').forEach(node=>node.setAttribute('aria-pressed',String(node===unclassified)));closeChooser();document.dispatchEvent(new Event('kumo-annotation-change'));};if(recent===unclassifiedId)list.prepend(unclassified);else list.append(unclassified);selectionLabel();requestAnimationFrame(measure);
+    return overview;
   }
   async function add(label) {
     if(offline)throw new Error('资料库未连接，请恢复连接后再添加标签。');

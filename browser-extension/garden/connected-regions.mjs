@@ -1,6 +1,6 @@
 // Structural ownership is kept separate from optional knowledge relations.
 export function connectEveryMember(graph){
- const edges=[...graph.points.values()].filter(p=>p.owner).map(p=>({key:'membership:'+p.key,from:p.clusterTopic||p.owner,to:p.key,kind:'membership'}));
+ const edges=[...graph.points.values()].filter(p=>p.owner).map(p=>({key:'membership:'+p.key,from:p.parent||p.clusterTopic||p.owner,to:p.key,kind:'membership'}));
  return {...graph,edges:[...edges,...graph.edges.filter(e=>e.kind!=='membership')]};
 }
 export function connectionAudit(graph){

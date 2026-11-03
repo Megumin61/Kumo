@@ -124,8 +124,8 @@ async function finishQuick(message='收藏完成') {
 for(const [id,label] of [['claude','Claude Code'],['qoder','Qoder']])TARGETS[id]={...TARGETS.generic,id,label,rootLabel:label+' 项目资料文件夹'};
 const preferences=KumoDestination.options(localStorage);
 screenshotEl.checked=preferences.screenshot;downloadImagesEl.checked=preferences.images;downloadVideoEl.checked=preferences.video;commentCountEl.value=String(preferences.comments);refreshSelects.get(commentCountEl)?.();
-function usingBridge(){return targetEl.value==='codex'&&Boolean(bridgeStatus?.ok)&&locationModeEl.value==='auto';}
-function currentProfile(){return ['directory','downloads'].includes(locationModeEl.value)?{...TARGETS.generic,label:'本地资料库'}:TARGETS[targetEl.value];}
+function usingBridge(){return false;}
+function currentProfile(){return {...TARGETS.generic,label:'本地资料库'};}
 
 async function followVideoJob(jobId) {
   saveEl.disabled = true;
@@ -225,8 +225,8 @@ function finishProgress(complete = true) {
   progressLabelEl.textContent = complete ? '保存完成' : '正文已保存，媒体待补全';
   progressDetailEl.textContent = complete ? '正文、笔记与来源已写入' : '可重试媒体，已保存内容不会丢失';
   progressPanelEl.hidden = true;
-  if(usingBridge())void KumoTags.load(true).catch(()=>{});
-  if (usingBridge()) void KumoBridge.library({limit:1}).then(result=>{const count=document.getElementById('saved-count');count.textContent=result.allTotal??result.total;count.hidden=false;}).catch(()=>{});
+  KumoBridge.invalidateCache(true);void KumoTags.load(Boolean(directoryHandle)).catch(()=>{});
+  if (directoryHandle) void KumoBridge.library({limit:1}).then(result=>{const count=document.getElementById('saved-count');count.textContent=result.allTotal??result.total;count.hidden=false;}).catch(()=>{});
 }
 
 const fetchBlobWithProgress = (...args) => KumoMedia.fetchBlobWithProgress(...args);
@@ -234,7 +234,7 @@ const fetchBlobWithProgress = (...args) => KumoMedia.fetchBlobWithProgress(...ar
 function updateFolder(handle) {
   const profile = currentProfile();
   const destination = profile.libraryPath === '.' ? 'inbox' : `${profile.libraryPath}/inbox`;
-  document.getElementById('use-connected').hidden=!(bridgeStatus?.ok&&!usingBridge());
+  document.getElementById('use-connected').hidden=true;
   if(!usingBridge())document.getElementById('saved-count').hidden=true;
   if(locationModeEl.value==='downloads'){targetPathEl.textContent='下载目录 / Kumo-Inbox / '+profile.id;changeFolderEl.textContent='更改文件夹';return;}
   if (usingBridge()) {
@@ -245,7 +245,7 @@ function updateFolder(handle) {
   }
   targetPathEl.textContent = handle ? `${handle.name}/${destination}` : '选择一个保存收藏的资料文件夹。';
   folderEl.textContent = handle ? `保存位置：${handle.name} → ${destination}` : '首次保存时选一个资料文件夹，之后会记住。';
-  changeFolderEl.textContent = handle ? '更换保存文件夹' : '选择保存文件夹';
+  changeFolderEl.textContent = handle ? (needsDirectoryPermission?'恢复文件夹授权':'更换保存文件夹') : '连接资料文件夹';
 }
 
 async function loadPage() {
@@ -257,6 +257,7 @@ async function loadPage() {
     if (!tab?.id || !/^https?:/i.test(tab.url || '')) throw new Error('请从网页点击 Kumo 图标，或按 Alt+Shift+K 打开。');
     activeWindowId = tab.windowId;
     activeTabId = tab.id;
+    const targetReady=loadTarget();void targetReady.catch(()=>{});
     if(snapshot)clip=snapshot.clip;
     else {
       const [stateResult] = await chrome.scripting.executeScript({target: {tabId: tab.id}, world: 'MAIN', func: readKumoPageState}).catch(() => []);
@@ -290,9 +291,9 @@ async function loadPage() {
     previewEl.textContent = `${typeLabel} · 正文 ${clip.stats.characters} 字 · 图片 ${clip.stats.images} 张${videos}${gallery}${comments}${selection}`;
     updateSavePlan();
     setStatus(clip.warnings.length ? '内容可能不完整' : '准备保存', clip.warnings.length ? 'warning' : '');
-    await loadTarget();
+    await targetReady;updateSavePlan();
     saveEl.disabled = false;
-    if(usingBridge()&&bridgeStatus?.capabilities?.includes('library_browser')){
+    if(bridgeStatus?.capabilities?.includes('library_browser')){
       let existing;
       try{existing=await KumoDuplicate.find(clip,KumoBridge,KumoStorage);}catch(error){setStatus('检查收藏状态失败，请检查本地资料库连接。','warning');saveEl.disabled=true;void revealQuick('无法检查收藏，请检查资料库连接','warning');return;}
       if(existing){
@@ -320,29 +321,10 @@ async function loadPage() {
   }
 }
 
-async function chooseFolder() {
-  targetEl.disabled=true;
-  try {
-    const profile = {...TARGETS[targetEl.value],libraryParts:[],libraryPath:'.',guideAtRoot:false,guideContent:TARGETS.generic.guideContent};
-    const picked = await KumoStorage.pickDirectory(profile.id);
-    if (!picked) {
-      updateFolder(null);
-      setStatus('此浏览器不支持文件夹授权，请在保存位置选择“浏览器下载目录”。', 'warning');
-      return null;
-    }
-    await KumoStorage.initializeLibrary(picked, profile);
-    directoryHandle = picked;
-    needsDirectoryPermission = false;
-    locationModeEl.value='directory';localStorage.setItem('kumo-location-'+targetEl.value,'directory');completeSaved=false;
-    await KumoTags.load(false);
-    updateFolder(directoryHandle);
-    setStatus('保存目录已设置。', 'success');
-    return directoryHandle;
-  } catch (error) {
-    if (error?.name === 'AbortError') return undefined;
-    setStatus(error.message || String(error), 'error');
-    return null;
-  } finally {targetEl.disabled=false;}
+async function chooseFolder({change=false}={}) {
+  await KumoStorage.openConnection({change});
+  setStatus('请在资料库连接页完成授权；已记住的文件夹不用重新选择。','warning');
+  return null;
 }
 
 async function screenshotBlob() {
@@ -484,7 +466,7 @@ async function save() {
     if(locationModeEl.value==='auto'){setStatus('本地资料库未连接。可选择资料文件夹继续保存。','warning');saveOptions.hidden=false;void revealQuick();return;}
     const picked=await chooseFolder();if(!picked)return;
   }
-  if(!usingBridge()&&directoryHandle&&locationModeEl.value!=='downloads'&&!await KumoStorage.ensurePermission(directoryHandle)){setStatus('目录授权已失效，请在保存设置中重新选择。','warning');saveOptions.hidden=false;void revealQuick();return;}
+  if(!usingBridge()&&directoryHandle&&locationModeEl.value!=='downloads'&&!await KumoStorage.ensurePermission(directoryHandle,{request:false})){setStatus('原资料文件夹已记住，请在连接页恢复授权。','warning');saveOptions.hidden=false;void revealQuick();return;}
   const note = noteEl.value;
   noteEl.disabled = true;
   clip.userTags = KumoTags.selected();
@@ -493,7 +475,7 @@ async function save() {
   setStatus('正在保存…');
   startProgress();
   try {
-    if (completeSaved && usingBridge() && Number(bridgeStatus?.apiVersion) >= 7) {
+    if (completeSaved && directoryHandle) {
       const result = await KumoBridge.annotate(clip, note, clip.userTags);
       setStatus(`笔记与标签已保存：${result.relativePath}。原内容和媒体未改动，也没有重新下载。`, 'success');
       saveEl.textContent = '已保存'; saveEl.disabled = true; finishProgress();
@@ -569,7 +551,9 @@ async function save() {
       {name: 'metadata.json', content: metadata, type: 'application/json;charset=utf-8'},
       {name: 'readable.html', content: readableHtml, type: 'text/html;charset=utf-8'}
     ];
-    const assetFiles = [...preparedImages.files, ...prepared.files, ...(frameFile ? [frameFile] : [])];
+    const captionFiles=KumoCaptions.files(clip.captions||[]);targetedClip.savedCaptions=captionFiles.map(f=>f.name);
+    files[0].content=KumoFormat.buildMarkdown(targetedClip,note,Boolean(screenshot));files[1].content=KumoFormat.buildMetadata(targetedClip,note,Boolean(screenshot));
+    const assetFiles = [...preparedImages.files, ...prepared.files, ...captionFiles, ...(frameFile ? [frameFile] : [])];
     files.push(...assetFiles);
     if (screenshot) files.push({name: 'viewport.png', content: screenshot, type: 'image/png'});
 
@@ -610,8 +594,8 @@ async function save() {
       directoryHandle = picked;
       profile=currentProfile();
     }
-    if (directoryHandle && locationModeEl.value!=='downloads' && !(await KumoStorage.ensurePermission(directoryHandle))) {
-      throw new Error('保存目录权限已失效，请重新选择目录。');
+    if (directoryHandle && locationModeEl.value!=='downloads' && !(await KumoStorage.ensurePermission(directoryHandle,{request:false}))) {
+      throw new Error('原资料文件夹已记住，请在连接页恢复授权。');
     }
 
     if (directoryHandle && locationModeEl.value!=='downloads') {
@@ -651,30 +635,14 @@ async function save() {
 }
 
 async function loadTarget() {
-  const requestId=++targetEpoch,requestedTarget=targetEl.value;
-  saveEl.disabled=true;directoryHandle=null;bridgeStatus=null;
-  completeSaved = false;
-  localStorage.setItem('kumo-target',requestedTarget);
-  const savedMode=localStorage.getItem('kumo-location-'+requestedTarget);
-  const [connection,handle]=await Promise.all([KumoBridge.status(),KumoStorage.getHandle(requestedTarget).catch(()=>null)]);
-  if(requestId!==targetEpoch)return;
-  bridgeStatus=connection;directoryHandle=handle;
-  needsDirectoryPermission=Boolean(handle && await handle.queryPermission({mode:'readwrite'})!=='granted');
-  if(requestId!==targetEpoch)return;
-  locationModeEl.value=KumoDestination.initialMode(savedMode,requestedTarget==='codex'?connection:null);
-  refreshSelects.get(locationModeEl)?.();
-  updateFolder(directoryHandle);
-  const bridgeExpected=requestedTarget==='codex'&&locationModeEl.value==='auto';
-  await KumoTags.load(usingBridge() && Boolean(bridgeStatus?.capabilities?.includes('library_browser')),{bridgeExpected}).catch(error => setStatus('标签暂时无法读取：'+error.message,'warning'));
-  if (usingBridge()) {
-    const result=await KumoBridge.library({limit:1}).catch(()=>null); if(result){const count=document.getElementById('saved-count');count.textContent=result.allTotal??result.total;count.hidden=false;}
-  } else {
-    document.getElementById('saved-count').hidden=true;
-  }
-  if(requestId!==targetEpoch)return;
-  saveEl.disabled=!clip;saveEl.textContent=!usingBridge()&&!directoryHandle&&locationModeEl.value==='directory'?'选择文件夹并保存':'嚼一嚼';
-  if(bridgeExpected&&!connection){setStatus('本地资料库未连接，正在等待服务恢复。','warning');watchBridgeReconnect();}
-  else if(bridgeReconnectTimer){clearInterval(bridgeReconnectTimer);bridgeReconnectTimer=null;}
+  const requestId=++targetEpoch;saveEl.disabled=true;completeSaved=false;
+  localStorage.setItem('kumo-target',targetEl.value);
+  const connection=await KumoBridge.status();if(requestId!==targetEpoch)return;
+  directoryHandle=await KumoStorage.getHandle('library');bridgeStatus=connection;needsDirectoryPermission=!!directoryHandle&&!await KumoStorage.ensurePermission(directoryHandle,{request:false});
+  locationModeEl.value=localStorage.getItem('kumo-location-'+targetEl.value)==='downloads'?'downloads':'directory';
+  refreshSelects.get(locationModeEl)?.();updateFolder(directoryHandle);
+  await KumoTags.load(Boolean(connection),{bridgeExpected:false}).catch(()=>{});
+  saveEl.disabled=!clip;saveEl.textContent=!directoryHandle&&locationModeEl.value==='directory'?'选择文件夹并保存':'嚼一嚼';
 }
 function watchBridgeReconnect(){
   if(quickSilent||bridgeReconnectTimer)return;
@@ -688,6 +656,8 @@ function watchBridgeReconnect(){
     }).catch(()=>{}).finally(()=>{bridgeReconnectBusy=false;});
   },5000);
 }
+window.addEventListener('kumo:library-updated',()=>void loadTarget().catch(error=>setStatus(error.message,'error')));
+window.addEventListener('storage',event=>{if(event.key==='kumo-directory-revision')void loadTarget().catch(error=>setStatus(error.message,'error'));});
 document.addEventListener('kumo-tags-error',event=>setStatus(event.detail,'error'));
 
 const tagForm=document.getElementById('tag-form'), tagInput=document.getElementById('tag-input'), addTag=document.getElementById('add-tag');let committingTag=false;
@@ -703,7 +673,7 @@ document.getElementById('open-library').addEventListener('click', () => {
   void KumoPanel.open(activeWindowId,{onOpened:()=>window.close(),onUnavailable:message=>setStatus(message,'warning')});
 });
 
-changeFolderEl.addEventListener('click', chooseFolder);
+changeFolderEl.addEventListener('click',()=>chooseFolder({change:!!directoryHandle&&!needsDirectoryPermission}));
 saveEl.addEventListener('click', async()=>{
   if(!clip)return;
   try {
@@ -712,9 +682,7 @@ saveEl.addEventListener('click', async()=>{
       return;
     }
     if(!usingBridge() && directoryHandle && locationModeEl.value!=='downloads' && needsDirectoryPermission){
-      const granted=await directoryHandle.requestPermission({mode:'readwrite'});
-      needsDirectoryPermission=granted!=='granted';
-      setStatus(needsDirectoryPermission?'未获得文件夹授权。':'文件夹已授权，请再次点击保存以继续。',needsDirectoryPermission?'warning':'success');
+      await chooseFolder();
       return;
     }
     const origins=requiredMediaOrigins();

@@ -6,7 +6,7 @@ export function collectionOpportunities(model){
 }
 export function opportunityFocus(model,lens){
  const info=collectionOpportunities(model),keys=new Set();if(lens==='all')return keys;if(lens==='fresh')return freshness(model).keys;
- const sources=lens==='pending'?info.pending.map(r=>r.key):info.bridges.flatMap(b=>b.relations.flatMap(r=>[r.from,r.to]));
+ const sources=lens==='pending'?info.pending.map(r=>r.key):model.relations.flatMap(r=>[r.from,r.to]);
  for(const key of sources){keys.add(key);keys.add(model.records.get(key)?.primary);}
  for(const r of model.topics)if(r.members?.some(k=>keys.has(k)))keys.add(r.key);
  return keys;

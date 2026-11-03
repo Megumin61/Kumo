@@ -1,6 +1,6 @@
 {
   "name": "kumo",
-  "version": "0.18.15",
+  "version": "0.19.1",
   "private": true,
   "description": "Clip Everything",
   "engines": {
@@ -8,11 +8,12 @@
   },
   "scripts": {
     "setup": "npm ci --prefix plugins/kumo/src/mcp --ignore-scripts",
-    "helper": "node local-bridge/start-helper.mjs",
+    "helper": "node -e \"console.log('The browser extension uses authorized folders and a local index; no helper service is required. See docs/BROWSER_SETUP.md')\"",
     "capture": "node scripts/kumo-capture.mjs",
     "test": "node --test browser-extension/tests/*.test.mjs local-bridge/tests/*.test.mjs plugins/kumo/src/mcp/tests/*.test.mjs",
     "check": "node scripts/check-distribution.mjs",
-    "package": "python scripts/package.py"
+    "package": "python scripts/package.py",
+    "build:garden": "node scripts/build-garden.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.12"

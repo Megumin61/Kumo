@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Kumo 网页剪藏",
-  "version": "0.18.15",
-  "description": "收藏网页、阅读笔记，并用森系知识花园探索本地资料。知识地图与收藏列表需连接 Kumo 本地资料库。",
+  "version": "0.19.1",
+  "description": "收藏网页和媒体到自己的资料文件夹，在本地 AI 中检索、使用并逐步沉淀知识。",
   "permissions": [
     "activeTab",
     "scripting",
@@ -14,9 +14,7 @@
   "side_panel": {
     "default_path": "library.html"
   },
-  "host_permissions": [
-    "http://127.0.0.1:43789/*"
-  ],
+  "host_permissions": [],
   "optional_host_permissions": [
     "http://*/*",
     "https://*/*"
@@ -57,5 +55,5 @@
     },
     "default_popup": "popup.html"
   },
-  "version_name": "0.18.15 · 本页开发者入口"
+  "version_name": "0.19.1 · 打开即见收藏"
 }

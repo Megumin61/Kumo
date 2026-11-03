@@ -1,3 +1,5 @@
+import {hierarchyDisplaySize,domainDisplaySize} from './map-metrics.mjs';
+import {branchMemberOffsets} from './field-view.mjs';
 import {radialMemberOffsets,constrainOutwardGrowth} from './cellular-growth.mjs';
 import {connectEveryMember} from './connected-regions.mjs';
 import {syncContentEnvelopes} from './content-contours.mjs';
@@ -54,11 +56,11 @@ export function radialCollectionLayout(model,options={}){
  const center={x:width*.5,y:height*.5},all=[...graph.points.values()],hubs=all.filter(p=>!p.owner);
  for(const hub of hubs){
   const members=all.filter(p=>p.owner===hub.key).sort((a,b)=>Number(b.record.kind==='topic')-Number(a.record.kind==='topic')||b.size-a.size||String(a.key).localeCompare(b.key));
-  hub.size=domainNodeSize();hub.growth=gardenGrowth(model,hub.record);for(const m of members){m.size=memberNodeSize(m.record,hub.size);if(m.record.kind==='source'){const topic=members.filter(t=>t.record.kind==='topic'&&t.record.members?.includes(m.key)).sort((a,b)=>a.record.members.length-b.record.members.length||a.key.localeCompare(b.key))[0];m.clusterTopic=topic?.key||null;m.parent=m.clusterTopic||hub.key;}}
-  let R=colonyRadius(hub.size,members.map(m=>m.size),hub.growth.density),offsets;for(let attempt=0;attempt<16;attempt++){try{offsets=memberOffsets(hub,members,R,hashSeed(hub.key)*6.28);break;}catch(error){if(attempt===15)throw error;R*=1.1;}}
+  hub.size=options.progressive?domainDisplaySize(hub.record.displayCount??hub.record.count??0):domainNodeSize();hub.visualExtent=0;hub.growth=gardenGrowth(model,hub.record);for(const m of members){m.size=options.progressive?hierarchyDisplaySize(model,m.record):memberNodeSize(m.record,hub.size);if(m.record.kind==='source'){const topic=members.filter(t=>t.record.kind==='topic'&&t.record.members?.includes(m.key)).sort((a,b)=>a.record.members.length-b.record.members.length||a.key.localeCompare(b.key))[0];m.clusterTopic=topic?.key||null;m.parent=m.clusterTopic||hub.key;}}
+  let R=colonyRadius(hub.size,members.map(m=>m.size),hub.growth.density),offsets=options.progressive&&!options.full?branchMemberOffsets(hub,members):null;for(let attempt=0;!offsets&&attempt<16;attempt++){try{offsets=memberOffsets(hub,members,R,hashSeed(hub.key)*6.28);break;}catch(error){if(attempt===15)throw error;R*=1.1;}}
   // Search room is not empty garden: fit the final boundary to the actual nodes.
-  R=Math.max(colonyRadius(hub.size,members.map(m=>m.size),hub.growth.density),...offsets.map((o,i)=>Math.hypot(o[0],o[1]/SQUASH)+members[i].size/(2*SQUASH)+16));
-  for(const edge of graph.edges){const p=members.find(m=>m.key===edge.to);if(edge.kind==='membership'&&p?.clusterTopic)edge.from=p.clusterTopic;}
+  R=Math.max(hub.size/2+48,...offsets.map((o,i)=>Math.hypot(o[0],o[1]/SQUASH)+members[i].size/(2*SQUASH)+16));
+  for(const edge of graph.edges){const p=members.find(m=>m.key===edge.to);if(edge.kind==='membership'&&p)edge.from=options.progressive?p.parent:(p.clusterTopic||hub.key);}
   const shape=hashSeed(hub.key+':shape'),aspect=.95+shape*.1,boost=1+Math.min(.05,(hub.record.displayCount||0)*.002);hub.colonyR=R;hub.plot={rx:(R+4)*aspect*boost,ry:((R+4)*SQUASH+10)/aspect*boost,cy:0,tilt:(shape-.5)*14,flow:.9+hashSeed(hub.key+':flow')*.6};
   offsets.forEach((o,i)=>{members[i].offset=o;members[i].vx=0;members[i].vy=0;});
  }
@@ -84,7 +86,7 @@ export function radialCollectionLayout(model,options={}){
  const before=new Map();for(const hub of hubs){const saved=positions.get(hub.key);if(saved){hub.x=saved[0];hub.y=saved[1];}before.set(hub.key,[hub.x,hub.y]);hub.vx=0;hub.vy=0;}
  relaxColonies(hubs,center);for(const hub of hubs)hub.home=[hub.x,hub.y];
  for(const p of all)if(p.owner){const owner=graph.points.get(p.owner),saved=positions.get(p.key),[bx,by]=before.get(owner.key)||[owner.x,owner.y];if(saved&&Math.hypot(saved[0]-bx,(saved[1]-by)/SQUASH)<owner.colonyR-p.size/2-8){p.x=saved[0]+owner.x-bx;p.y=saved[1]+owner.y-by;p.offset=[p.x-owner.x,p.y-owner.y];}else{p.x=owner.x+p.offset[0];p.y=owner.y+p.offset[1];}}
- relaxMembers(graph.points);for(const p of all)if(p.owner){const owner=graph.points.get(p.owner);p.offset=[p.x-owner.x,p.y-owner.y];}
+ if(!options.progressive)relaxMembers(graph.points);for(const p of all)if(p.owner){const owner=graph.points.get(p.owner);p.offset=[p.x-owner.x,p.y-owner.y];}
  graph.core={x:center.x,y:center.y,radius:CORE_R,size:CORE_R*2};
  graph.reserved=[{left:center.x-CORE_R,right:center.x+CORE_R,top:center.y-CORE_R*SQUASH,bottom:center.y+CORE_R*SQUASH+16},...hubs.map(h=>({left:h.x-h.plot.rx*1.25,right:h.x+h.plot.rx*1.25,top:h.y+(h.plot.cy||0)-h.plot.ry*1.25,bottom:h.y+(h.plot.cy||0)+h.plot.ry*1.25+30}))];
  return syncContentEnvelopes(graph);
