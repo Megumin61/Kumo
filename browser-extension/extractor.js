@@ -327,21 +327,38 @@ async function extractKumoPage(pageState = {}) {
 
   const videos = [];
   const seenVideos = new Set();
-  const addVideo = (value, type = '', poster = '', origin = 'page') => {
+  const addVideo = (value, type = '', poster = '', origin = 'page', extra = {}) => {
     const raw = String(value || '').trim();
     const url = /^(blob:)/i.test(raw) ? raw : absolute(raw);
     if (!url || seenVideos.has(url)) return;
     seenVideos.add(url);
     const lower = url.toLowerCase();
-    const kind = /^blob:/i.test(url) ? 'blob' : /\.m3u8(?:$|\?)/i.test(lower) || /mpegurl/i.test(type) ? 'stream_manifest' : /\.(?:mp4|webm|mov|m4v)(?:$|\?)/i.test(lower) || /^video\//i.test(type) ? 'direct_file' : 'embed_or_unknown';
-    videos.push({url, type, kind, poster: absolute(poster), origin});
+    // A URL taken from a <video>/<source> element is media even without a file extension.
+    const mediaElement = origin === 'video_element' || origin === 'source_element';
+    const kind = extra.kind || (/^blob:/i.test(url) ? 'blob' : /\.m3u8(?:$|\?)/i.test(lower) || /mpegurl/i.test(type) ? 'stream_manifest' : /\.(?:mp4|webm|mov|m4v)(?:$|\?)/i.test(lower) || /^video\//i.test(type) || mediaElement ? 'direct_file' : 'embed_or_unknown');
+    const video = {url, type, kind, poster: absolute(poster), origin};
+    if (extra.audioUrl) video.audioUrl = absolute(extra.audioUrl);
+    if (extra.alternatives?.length) video.alternatives = extra.alternatives.map(item => ({...item, url: absolute(item.url), ...(item.audioUrl ? {audioUrl: absolute(item.audioUrl)} : {})})).filter(item => item.url);
+    for (const key of ['livePhoto', 'order', 'mediaId', 'width', 'height']) if (extra[key] !== undefined) video[key] = extra[key];
+    videos.push(video);
   };
   const videoScope = xhs ? document.querySelector('#noteContainer') || root : x ? root : douyin ? root.closest('[data-e2e="detail-video"]') || root.parentElement || root : tiktok ? document.querySelector('[data-e2e="browse-video"]') || root : bili || youtube ? document.querySelector('#bilibili-player, .bpx-player-container, #movie_player') || root : root;
   const primaryVideoElements = [...videoScope.querySelectorAll('video')];
   if (videoScope.tagName?.toLowerCase() === 'video') primaryVideoElements.unshift(videoScope);
+  // On ordinary web pages the reading view can leave out players placed beside the article.
+  if (!xhs && !x && !douyin && !tiktok && !bili && !youtube) {
+    for (const video of document.querySelectorAll('video')) {
+      if (primaryVideoElements.includes(video) || video.closest('header')) continue;
+      const box = video.getBoundingClientRect();
+      if (box.width && box.width < 120 && box.height < 90) continue;
+      primaryVideoElements.push(video);
+    }
+  }
   primaryVideoElements.forEach(video => {
     if (video.closest('aside,nav,footer,.recommend,.recommendation,.comments,.comment-list,[data-e2e*="comment"]')) return;
     if (x && video.poster && !/(?:amplify_video_thumb|ext_tw_video_thumb|tweet_video_thumb)\//i.test(video.poster)) return;
+    const lazy = video.currentSrc || video.src ? '' : video.getAttribute('data-src') || video.getAttribute('data-video-src') || video.getAttribute('data-original') || '';
+    if (lazy) addVideo(lazy, video.getAttribute('type') || '', video.poster, 'video_element');
     addVideo(video.currentSrc || video.src, video.getAttribute('type') || '', video.poster, 'video_element');
     video.querySelectorAll('source').forEach(source => addVideo(source.src, source.type, video.poster, 'source_element'));
     const captured = videos.find(item => item.url === (video.currentSrc || video.src));
@@ -354,8 +371,8 @@ async function extractKumoPage(pageState = {}) {
     document.querySelectorAll('meta[property="og:video"], meta[property="og:video:url"], meta[property="og:video:secure_url"]').forEach(node => addVideo(node.content, meta('og:video:type'), meta('og:image'), 'open_graph'));
     addVideo(jsonLd.contentUrl, jsonLd.encodingFormat || '', jsonLd.thumbnailUrl || meta('og:image'), 'json_ld');
   }
-  xhsGallerySnapshot.videos.forEach(video => addVideo(video.url, video.type, video.poster, 'xiaohongshu_gallery'));
-  (coreState?.videos || []).forEach(video => addVideo(video.url, video.type, video.poster, 'target_page_state'));
+  xhsGallerySnapshot.videos.forEach(video => addVideo(video.url, video.type, video.poster, 'xiaohongshu_gallery', video));
+  (coreState?.videos || []).forEach(video => addVideo(video.url, video.type, video.poster, 'target_page_state', video));
   if (coreState?.videos?.length || xhsNote?.videos?.length) {
     for (let index = videos.length - 1; index >= 0; index--) {
       const expectedOrigin = coreState?.videos?.length ? 'target_page_state' : 'xiaohongshu_gallery';
@@ -413,6 +430,20 @@ async function extractKumoPage(pageState = {}) {
       const poster = [...root.querySelectorAll('img')].map(image => imageUrl(image)).find(url => url.includes(`/${mediaId}/`)) || '';
       videos.push({url: '', kind: 'unresolved', poster, mediaId, origin: 'x_player_poster'});
     }
+  }
+  // Streaming players expose only a blob: URL. The manifest or file they loaded is still in the
+  // page's resource timeline, so it becomes the download source for those players.
+  if (!x && videos.some(video => video.kind === 'blob')) {
+    let resources = [];
+    try { resources = performance.getEntriesByType('resource').map(entry => entry.name); } catch {}
+    const unique = list => [...new Set(list)];
+    // Files that other players on the page already show (ads, previews) are not this player's source.
+    const owned = new Set([...document.querySelectorAll('video, video source')].flatMap(node => [node.currentSrc, node.src]).filter(url => url && !/^blob:/i.test(url)).map(absolute));
+    resources = resources.filter(url => !owned.has(url));
+    const manifests = unique(resources.filter(url => /^https?:/i.test(url) && /\.m3u8(?:$|[?#])/i.test(url)));
+    const files = unique(resources.filter(url => /^https?:/i.test(url) && /\.(?:mp4|webm|m4v|mov)(?:$|[?#])/i.test(url) && !/(?:^|[/_.-])(?:init|seg(?:ment)?[-_]?\d+)(?:[-_.]|$)|[?&](?:range|bytes)=/i.test(url)));
+    const alternatives = [...manifests.map(url => ({url, kind: 'stream_manifest'})), ...files.map(url => ({url, kind: 'direct_file'}))].slice(0, 12);
+    if (alternatives.length) videos.filter(video => video.kind === 'blob').forEach(video => { video.alternatives = [...(video.alternatives || []), ...alternatives]; });
   }
   if (!videos.length && jsonLd.embedUrl && !x) addVideo(jsonLd.embedUrl, '', jsonLd.thumbnailUrl || meta('og:image'), 'json_ld_embed');
 

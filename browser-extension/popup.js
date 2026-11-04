@@ -83,12 +83,29 @@ let bridgeReconnectTimer=null,bridgeReconnectBusy=false;
 const quickSilent=Boolean(globalThis.KumoQuickWorker)||new URLSearchParams(location.search).get('silent')==='1';
 const quickParam=name=>globalThis.KumoQuickWorker?.params?.[name]??new URLSearchParams(location.search).get(name);
 let saveInitiated=false, quickHandled=false;
+// Every address a video may be read from: the main source, its mirrors and a separate audio track.
+function videoPermissionTargets(target){
+  return (target.videos||[]).flatMap(video=>[video,...(video.alternatives||[])]).flatMap(item=>[item.url,item.audioUrl]).filter(url=>/^https?:/i.test(url||'')).map(url=>({url}));
+}
+// Video hosts often refuse requests without the page as Referer. While videos download,
+// Kumo's own requests carry the saved page's address, as they would when played on that page.
+async function withPageReferer(target,task){
+  let referer='';
+  try{const url=new URL(target.capturedUrl||target.url);if(/^https?:$/.test(url.protocol)){url.hash='';referer=url.href;}}catch{}
+  const rules=chrome.declarativeNetRequest;
+  if(!referer||!rules?.updateSessionRules)return task();
+  const id=700000+Math.floor(Math.random()*200000);
+  try{await rules.updateSessionRules({addRules:[{id,priority:1,action:{type:'modifyHeaders',requestHeaders:[{header:'referer',operation:'set',value:referer}]},condition:{initiatorDomains:[chrome.runtime.id],resourceTypes:['xmlhttprequest','media','other']}}]});}
+  catch{return task();}
+  try{return await task();}
+  finally{await rules.updateSessionRules({removeRuleIds:[id]}).catch(()=>{});}
+}
 function requiredMediaOrigins() {
   const useXJob=usingBridge()&&Number(bridgeStatus?.apiVersion)>=6&&clip.platformId==='x'&&downloadVideoEl.checked;
   const media=[];
   if(downloadImagesEl.checked&&!useXJob)media.push(...(clip.images||[]));
   if(downloadVideoEl.checked&&!(usingBridge()&&clip.platformId==='x'&&Number(bridgeStatus?.apiVersion)>=6)){
-    media.push(...(clip.videos||[]).filter(video=>/^https?:/i.test(video.url)));
+    media.push(...videoPermissionTargets(clip));
     if(clip.platformId==='x'&&(clip.videos||[]).some(video=>video.kind==='blob'))media.push({url:clip.capturedUrl||clip.url},{url:'https://video.twimg.com/'});
   }
   return [...new Set(media.map(item=>{try{const url=new URL(item.url);return /^https?:$/.test(url.protocol)?url.origin+'/*':'';}catch{return '';}}).filter(Boolean))];
@@ -415,7 +432,7 @@ async function prepareImageFiles(sourceClip, onProgress, mediaPermissionGranted)
 
 async function prepareVideoFiles(sourceClip, onProgress, mediaPermissionGranted) {
   const useBridge = sourceClip.platformId === 'x' && Number(bridgeStatus?.apiVersion) >= 6;
-  return KumoMedia.prepareVideos(sourceClip, {
+  return withPageReferer(sourceClip, () => KumoMedia.prepareVideos(sourceClip, {
     download: downloadVideoEl.checked,
     permission: mediaPermissionGranted || useBridge,
     onProgress,
@@ -438,7 +455,7 @@ async function prepareVideoFiles(sourceClip, onProgress, mediaPermissionGranted)
       } catch (error) { errors.push(`extension:${error.message}`); }
       throw new Error(`x_resolution_failed (${errors.join('; ')})`);
     }
-  });
+  }));
 }
 
 async function resolveXVideoFromCurrentPage(pageUrl, mediaIds) {
@@ -485,7 +502,7 @@ async function save() {
     const mediaTargets = [];
     if (downloadImagesEl.checked && !useXJob) mediaTargets.push(...(clip.images || []));
     if (downloadVideoEl.checked && !(usingBridge() && clip.platformId === 'x' && Number(bridgeStatus?.apiVersion) >= 6)) {
-      mediaTargets.push(...(clip.videos || []).filter(video => /^https?:/i.test(video.url)));
+      mediaTargets.push(...videoPermissionTargets(clip));
       if (clip.platformId === 'x' && (clip.videos || []).some(video => video.kind === 'blob')) {
         mediaTargets.push({url: clip.capturedUrl || clip.url}, {url: 'https://video.twimg.com/'});
       }

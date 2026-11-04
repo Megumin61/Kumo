@@ -21,5 +21,6 @@
   chrome.commands={getAll:()=>rpc('commands.getAll')};
   chrome.action={setBadgeText:(...args)=>rpc('action.setBadgeText',...args)};
   chrome.downloads={download:(...args)=>rpc('downloads.download',...args),search:(...args)=>rpc('downloads.search',...args)};
+  chrome.declarativeNetRequest={updateSessionRules:(...args)=>rpc('declarativeNetRequest.updateSessionRules',...args)};
   chrome.scripting={executeScript:options=>{const {func,...rest}=options;return rpc('scripting.executeScript',{...rest,functionName:func?.name});}};
 })(globalThis);
