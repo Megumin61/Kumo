@@ -1,5 +1,7 @@
 # 媒体阅读与分层编译
 
+浏览器负责保存原视频及页面可取得的原字幕，不在剪藏时运行 AI。先读 `metadata.json` 的 `mediaProcessing.captions.tracks`，按 `videoIndex` 对应视频并读取其中的本地 VTT 文件；`savedCaptions` 是兼容入口。字幕缺失、截断或下载失败时，保留状态，不能据此声称已理解视频。原字幕不改写，翻译保留时间码、语言和原字幕路径，另存 `derived/media/`，并由 AI 在编译时完成。`translation.state:pending_ai` 是待办，不代表已经翻译。无字幕时先检查音轨；没有音轨就记录无音轨，有音轨且任务需要时才转写。视频画面中的文字不等于音频字幕。
+
 用户授权编译后，先调用 `prepare_media`，需要读图中文字时加 `ocr:true`。默认完全本地：顺序整理全部已保存图片，长图分段，视频按时间与场景变化抽帧。`transcribe:true` 会把音频发送到已配置的转写服务，只有获得相应传输授权并具备有效凭据后才启用。失败状态必须保留，不能以空文字稿代替成功。
 
 读取 `read_source(view:'prepared')`；必要时翻页。用 `read_image(name:'prepared/sheet-001.jpg')` 顺序阅读全部图片页，再读需要精看文字的 `prepared/preview-0001.jpg`。页内编号与 manifest 记录原资源、长图分段和视频秒数。拼图不能替代小字核验。视频抽帧仅提供视觉概览；转写只覆盖声音，均不代表完整观看或效果验证。

@@ -48,12 +48,12 @@
     const syncIndexes = samples.map((sample, index) => sample.sync ? index + 1 : 0).filter(Boolean);
     const stbl = box('stbl',
       track.stsd,
-      fullBox('stts', 0, 0, u32(stts.length), ...stts.flatMap(([count, delta]) => [u32(count), u32(delta)])),
-      ...(ctts ? [fullBox('ctts', negative ? 1 : 0, 0, u32(ctts.length), ...ctts.flatMap(([count, offset]) => [u32(count), i32(offset)]))] : []),
-      ...(video && syncIndexes.length < samples.length ? [fullBox('stss', 0, 0, u32(syncIndexes.length), ...syncIndexes.map(u32))] : []),
+      fullBox('stts', 0, 0, u32(stts.length), concat(stts.flatMap(([count, delta]) => [u32(count), u32(delta)]))),
+      ...(ctts ? [fullBox('ctts', negative ? 1 : 0, 0, u32(ctts.length), concat(ctts.flatMap(([count, offset]) => [u32(count), i32(offset)])))] : []),
+      ...(video && syncIndexes.length < samples.length ? [fullBox('stss', 0, 0, u32(syncIndexes.length), concat(syncIndexes.map(u32)))] : []),
       fullBox('stsc', 0, 0, u32(1), u32(1), u32(1), u32(1)),
-      fullBox('stsz', 0, 0, u32(0), u32(samples.length), ...samples.map(sample => u32(sample.size))),
-      fullBox('stco', 0, 0, u32(chunkOffsets.length), ...chunkOffsets.map(u32))
+      fullBox('stsz', 0, 0, u32(0), u32(samples.length), concat(samples.map(sample => u32(sample.size)))),
+      fullBox('stco', 0, 0, u32(chunkOffsets.length), concat(chunkOffsets.map(u32)))
     );
     const minf = box('minf',
       video ? fullBox('vmhd', 0, 1, u16(0), u16(0), u16(0), u16(0)) : fullBox('smhd', 0, 0, u16(0), u16(0)),
@@ -138,7 +138,7 @@
   const find = (bytes, parent, type) => children(bytes, parent.body, parent.end).find(child => child.type === type);
   const path = (bytes, parent, ...types) => types.reduce((node, type) => node && find(bytes, node, type), parent);
 
-  function parseMoov(bytes) {
+  function parseMoov(bytes, source) {
     const root = {body: 0, end: bytes.length};
     const moov = find(bytes, root, 'moov');
     if (!moov) throw new Error('remux_missing_moov');
@@ -174,10 +174,58 @@
           emptySeconds += duration / movieTimescale;
         }
       }
-      tracks.push({sourceId: id, handler, timescale, stsd: bytes.slice(stsd.start, stsd.end), width: data.getUint32(whAt) >>> 16, height: data.getUint32(whAt + 4) >>> 16, editTime, emptySeconds, defaults: defaults.get(id) || {duration: 0, size: 0, flags: 0}, samples: [], nextDts: null, firstDts: null});
+      const track = {sourceId: id, handler, timescale, stsd: bytes.slice(stsd.start, stsd.end), width: data.getUint32(whAt) >>> 16, height: data.getUint32(whAt + 4) >>> 16, editTime, emptySeconds, defaults: defaults.get(id) || {duration: 0, size: 0, flags: 0}, samples: [], nextDts: null, firstDts: null};
+      const stbl = path(bytes, trak, 'mdia', 'minf', 'stbl');
+      if (source && stbl) readFlatSamples(bytes, stbl, track, source);
+      tracks.push(track);
     }
     if (!tracks.length) throw new Error('remux_no_media_tracks');
     return tracks;
+  }
+
+  // SegmentBase DASH often delivers ordinary MP4 tracks, not moof fragments.
+  function readFlatSamples(bytes, stbl, track, source) {
+    const data = view(bytes), stsz = find(bytes, stbl, 'stsz');
+    if (!stsz) return;
+    const count = data.getUint32(stsz.body + 8), fixed = data.getUint32(stsz.body + 4);
+    if (!count) return;
+    if (count > 2000000) throw new Error('remux_sample_count_limit');
+    const chunks = find(bytes, stbl, 'stco') || find(bytes, stbl, 'co64'), stsc = find(bytes, stbl, 'stsc'), stts = find(bytes, stbl, 'stts');
+    if (!chunks || !stsc || !stts) throw new Error('remux_missing_sample_tables');
+    const check = (box, offset, length) => { if (offset < box.body || offset + length > box.end) throw new Error('remux_invalid_sample_table'); };
+    const sizes = Array.from({length: count}, (_, index) => { if (fixed) return fixed; check(stsz, stsz.body + 12 + index * 4, 4); return data.getUint32(stsz.body + 12 + index * 4); });
+    const expand = (box, signed = false) => {
+      const values = new Array(count); if (!box) return values.fill(0);
+      let n = 0; const rows = data.getUint32(box.body + 4);
+      for (let row = 0; row < rows; row++) {
+        const at = box.body + 8 + row * 8; check(box, at, 8);
+        const repeat = data.getUint32(at), value = signed ? data.getInt32(at + 4) : data.getUint32(at + 4);
+        if (n + repeat > count) throw new Error('remux_invalid_sample_table');
+        values.fill(value, n, n + repeat); n += repeat;
+      }
+      if (n !== count) throw new Error('remux_incomplete_sample_table');
+      return values;
+    };
+    const durations = expand(stts), ctts = find(bytes, stbl, 'ctts'), offsets = expand(ctts, ctts && bytes[ctts.body] === 1);
+    const stss = find(bytes, stbl, 'stss'), sync = stss ? new Set() : null;
+    if (stss) for (let i = 0; i < data.getUint32(stss.body + 4); i++) { const at = stss.body + 8 + i * 4; check(stss, at, 4); sync.add(data.getUint32(at)); }
+    const mappings = [];
+    for (let i = 0; i < data.getUint32(stsc.body + 4); i++) { const at = stsc.body + 8 + i * 12; check(stsc, at, 12); if (data.getUint32(at + 8) !== 1) throw new Error('remux_multiple_sample_descriptions'); mappings.push({first: data.getUint32(at), count: data.getUint32(at + 4)}); }
+    if (!mappings.length || mappings[0].first !== 1) throw new Error('remux_invalid_sample_table');
+    let sample = 0, mapping = 0, dts = 0;
+    const chunkCount = data.getUint32(chunks.body + 4), stride = chunks.type === 'co64' ? 8 : 4;
+    for (let chunk = 1; chunk <= chunkCount; chunk++) {
+      while (mapping + 1 < mappings.length && mappings[mapping + 1].first <= chunk) mapping++;
+      const at = chunks.body + 8 + (chunk - 1) * stride; check(chunks, at, stride);
+      let offset = stride === 8 ? Number(data.getBigUint64(at)) : data.getUint32(at);
+      for (let i = 0; i < mappings[mapping].count; i++) {
+        if (sample >= count || !Number.isSafeInteger(offset) || offset < 0 || offset + sizes[sample] > source.size) throw new Error('remux_invalid_sample_offset');
+        track.samples.push({source, offset, size: sizes[sample], duration: durations[sample], cto: offsets[sample], sync: !sync || sync.has(sample + 1)});
+        offset += sizes[sample]; dts += durations[sample]; sample++;
+      }
+    }
+    if (sample !== count) throw new Error('remux_incomplete_sample_table');
+    track.firstDts = 0; track.nextDts = dts;
   }
 
   function parseMoof(bytes, moofStart, tracks, source, sourceOffset) {
@@ -246,7 +294,7 @@
       else if (size === 0) size = blob.size - offset;
       if (size < 8 || offset + size > blob.size) break;
       if (type === 'moov') {
-        if (!tracks.length) tracks.push(...parseMoov(await readBytes(blob, offset, offset + size)));
+        if (!tracks.length) tracks.push(...parseMoov(await readBytes(blob, offset, offset + size), blob));
       } else if (type === 'moof') {
         if (!tracks.length) throw new Error('remux_missing_init_segment');
         const bytes = await readBytes(blob, offset, offset + size);

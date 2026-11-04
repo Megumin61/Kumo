@@ -66,7 +66,7 @@ function readKumoPageState() {
       const video = (avc.length ? avc : play.dash.video || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0) || (b.bandwidth || 0) - (a.bandwidth || 0))[0];
       const audio = (play.dash.audio || []).filter(item => /mp4a/i.test(item.codecs || '') || !item.codecs).sort((a, b) => (b.bandwidth || 0) - (a.bandwidth || 0))[0];
       const videoUrls = urls(video), audioUrls = urls(audio);
-      if (videoUrls.length && audioUrls.length) videos = [{url: videoUrls[0], audioUrl: audioUrls[0], kind: 'dash_pair', type: 'video/mp4', poster: http(data.pic), origin: 'target_page_state', alternatives: videoUrls.slice(1).map((url, index) => ({url, audioUrl: audioUrls[(index + 1) % audioUrls.length], kind: 'dash_pair'}))}];
+      if (videoUrls.length && audioUrls.length) { const pairs=videoUrls.flatMap(url=>audioUrls.map(audioUrl=>({url,audioUrl,kind:'dash_pair'}))).slice(0,24); videos=[{...pairs[0],type:'video/mp4',poster:http(data.pic),origin:'target_page_state',alternatives:pairs.slice(1)}]; }
     }
     return {sourceId: biliId, core: {title: String(data.title || ''), description: String(data.desc || ''), images: [], videos}};
   }

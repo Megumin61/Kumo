@@ -443,7 +443,9 @@ async function extractKumoPage(pageState = {}) {
     const manifests = unique(resources.filter(url => /^https?:/i.test(url) && /\.m3u8(?:$|[?#])/i.test(url)));
     const files = unique(resources.filter(url => /^https?:/i.test(url) && /\.(?:mp4|webm|m4v|mov)(?:$|[?#])/i.test(url) && !/(?:^|[/_.-])(?:init|seg(?:ment)?[-_]?\d+)(?:[-_.]|$)|[?&](?:range|bytes)=/i.test(url)));
     const alternatives = [...manifests.map(url => ({url, kind: 'stream_manifest'})), ...files.map(url => ({url, kind: 'direct_file'}))].slice(0, 12);
-    if (alternatives.length) videos.filter(video => video.kind === 'blob').forEach(video => { video.alternatives = [...(video.alternatives || []), ...alternatives]; });
+    const unresolved = videos.filter(video => video.kind === 'blob');
+    if (alternatives.length === 1 && unresolved.length === 1) unresolved[0].alternatives = [...(unresolved[0].alternatives || []), ...alternatives];
+    else if (alternatives.length) unresolved.forEach(video => { video.sourceResolutionError = 'ambiguous_page_video_resources'; });
   }
   if (!videos.length && jsonLd.embedUrl && !x) addVideo(jsonLd.embedUrl, '', jsonLd.thumbnailUrl || meta('og:image'), 'json_ld_embed');
 
@@ -624,10 +626,17 @@ async function extractKumoPage(pageState = {}) {
   const foundGalleryMedia = images.length + videos.filter(video => video.origin === 'xiaohongshu_gallery' || video.origin === 'video_element' || video.origin === 'source_element').length;
   if (xhsGallerySnapshot.expected && foundGalleryMedia < xhsGallerySnapshot.expected) warnings.push(`xiaohongshu_gallery_incomplete:${foundGalleryMedia}/${xhsGallerySnapshot.expected}`);
 
-  const captions=[];let captionCharacters=0;
-  for(const video of root.querySelectorAll('video')){try{for(const track of video.textTracks||[]){const cues=[];for(const cue of Array.from(track.cues||[]).slice(0,2000)){const text=String(cue.text||'').slice(0,3000);if(captionCharacters+text.length>200000)break;captionCharacters+=text.length;cues.push({start:cue.startTime,end:cue.endTime,text});}if(cues.length)captions.push({language:track.language,label:track.label,kind:track.kind,cues});}}catch{}}
+  const captions=[],captionSources=[];let captionCharacters=0;
+  for(const video of primaryVideoElements){
+    if(video.closest('aside,nav,footer,.recommend,.recommendation,.comments,.comment-list,[data-e2e*="comment"]'))continue;
+    const current=video.currentSrc||video.src||video.getAttribute('data-src')||'',index=videos.findIndex(item=>item.url===current||video.poster&&item.poster===absolute(video.poster)),videoIndex=index<0?null:index;
+    const declared=Array.from(video.querySelectorAll('track[src]')).filter(t=>!t.kind||['subtitles','captions'].includes(t.kind));
+    for(const track of declared){const url=absolute(track.src||track.getAttribute('src'));if(/^https?:/i.test(url))captionSources.push({url,language:track.srclang||'',label:track.label||'',kind:track.kind||'subtitles',videoIndex});}
+    try{for(const track of video.textTracks||[]){const cues=[];for(const cue of Array.from(track.cues||[]).slice(0,2000)){const text=String(cue.text||'').slice(0,3000);if(captionCharacters+text.length>200000)break;captionCharacters+=text.length;cues.push({start:cue.startTime,end:cue.endTime,text});}if(cues.length){const source=declared.find(t=>(t.srclang||'')===(track.language||'')&&(t.label||'')===(track.label||''));captions.push({language:track.language,label:track.label,kind:track.kind,cues,videoIndex,sourceUrl:source?absolute(source.src||source.getAttribute('src')):'',truncated:(track.cues?.length||0)>cues.length});}}}catch{}
+  }
   return {
     captions,
+    captionSources,
     schema: 'kumo-clip-v1',
     extractorVersion: '0.8.2',
     id: `${capturedAt.slice(0, 10)}-${contentHash}`,

@@ -99,7 +99,7 @@
         lines.push(`${index + 1}. ${author}${likes}：${safeLine(comment.text)}`, '');
       });
     }
-    if (clip.savedCaptions?.length) lines.push('## 原字幕', '', ...clip.savedCaptions.map(name=>`[页面已加载字幕](${name})`), '');
+    if (clip.savedCaptions?.length) lines.push('## 原字幕', '', ...clip.savedCaptions.map(name=>`[原字幕](${name})`), '');
     if (clip.images?.length) {
       lines.push('## 图片', '');
       clip.images.forEach((image, index) => {

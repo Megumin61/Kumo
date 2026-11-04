@@ -89,24 +89,15 @@ function videoPermissionTargets(target){
 }
 // Video hosts often refuse requests without the page as Referer. While videos download,
 // Kumo's own requests carry the saved page's address, as they would when played on that page.
-async function withPageReferer(target,task){
-  let referer='';
-  try{const url=new URL(target.capturedUrl||target.url);if(/^https?:$/.test(url.protocol)){url.hash='';referer=url.href;}}catch{}
-  const rules=chrome.declarativeNetRequest;
-  if(!referer||!rules?.updateSessionRules)return task();
-  const id=700000+Math.floor(Math.random()*200000);
-  try{await rules.updateSessionRules({addRules:[{id,priority:1,action:{type:'modifyHeaders',requestHeaders:[{header:'referer',operation:'set',value:referer}]},condition:{initiatorDomains:[chrome.runtime.id],resourceTypes:['xmlhttprequest','media','other']}}]});}
-  catch{return task();}
-  try{return await task();}
-  finally{await rules.updateSessionRules({removeRuleIds:[id]}).catch(()=>{});}
-}
+async function withPageReferer(target,task){return task(KumoMedia.createPageMediaFetch(target));}
 function requiredMediaOrigins() {
   const useXJob=usingBridge()&&Number(bridgeStatus?.apiVersion)>=6&&clip.platformId==='x'&&downloadVideoEl.checked;
   const media=[];
   if(downloadImagesEl.checked&&!useXJob)media.push(...(clip.images||[]));
   if(downloadVideoEl.checked&&!(usingBridge()&&clip.platformId==='x'&&Number(bridgeStatus?.apiVersion)>=6)){
     media.push(...videoPermissionTargets(clip));
-    if(clip.platformId==='x'&&(clip.videos||[]).some(video=>video.kind==='blob'))media.push({url:clip.capturedUrl||clip.url},{url:'https://video.twimg.com/'});
+    media.push(...(clip.captionSources||[]));
+    if(clip.platformId==='x'&&(clip.videos||[]).some(video=>video.kind==='blob'))media.push({url:clip.capturedUrl||clip.url},{url:'https://video.twimg.com/'},{url:'https://cdn.syndication.twimg.com/'});
   }
   return [...new Set(media.map(item=>{try{const url=new URL(item.url);return /^https?:$/.test(url.protocol)?url.origin+'/*':'';}catch{return '';}}).filter(Boolean))];
 }
@@ -432,11 +423,11 @@ async function prepareImageFiles(sourceClip, onProgress, mediaPermissionGranted)
 
 async function prepareVideoFiles(sourceClip, onProgress, mediaPermissionGranted) {
   const useBridge = sourceClip.platformId === 'x' && Number(bridgeStatus?.apiVersion) >= 6;
-  return withPageReferer(sourceClip, () => KumoMedia.prepareVideos(sourceClip, {
+  return withPageReferer(sourceClip, mediaFetch => KumoMedia.prepareVideos(sourceClip, {
     download: downloadVideoEl.checked,
     permission: mediaPermissionGranted || useBridge,
     onProgress,
-    fetchImpl: useBridge ? KumoBridge.fetchXMedia : fetch,
+    fetchImpl: useBridge ? KumoBridge.fetchXMedia : mediaFetch,
     resolveX: async (url, mediaIds) => {
       const errors = [];
       if (useBridge) {
@@ -453,6 +444,11 @@ async function prepareVideoFiles(sourceClip, onProgress, mediaPermissionGranted)
         if (videos.length) return videos;
         errors.push('extension:no_variants');
       } catch (error) { errors.push(`extension:${error.message}`); }
+      try {
+        const videos = await KumoMedia.resolveXVideoFromSyndication(url, mediaIds);
+        if (videos.length) return videos;
+        errors.push('embed:no_variants');
+      } catch (error) { errors.push(`embed:${error.message}`); }
       throw new Error(`x_resolution_failed (${errors.join('; ')})`);
     }
   }));
@@ -503,8 +499,9 @@ async function save() {
     if (downloadImagesEl.checked && !useXJob) mediaTargets.push(...(clip.images || []));
     if (downloadVideoEl.checked && !(usingBridge() && clip.platformId === 'x' && Number(bridgeStatus?.apiVersion) >= 6)) {
       mediaTargets.push(...videoPermissionTargets(clip));
+      mediaTargets.push(...(clip.captionSources || []));
       if (clip.platformId === 'x' && (clip.videos || []).some(video => video.kind === 'blob')) {
-        mediaTargets.push({url: clip.capturedUrl || clip.url}, {url: 'https://video.twimg.com/'});
+        mediaTargets.push({url: clip.capturedUrl || clip.url}, {url: 'https://video.twimg.com/'}, {url: 'https://cdn.syndication.twimg.com/'});
       }
     }
     const mediaPermissionGranted = await requestImageOrigins(mediaTargets);
@@ -568,8 +565,11 @@ async function save() {
       {name: 'metadata.json', content: metadata, type: 'application/json;charset=utf-8'},
       {name: 'readable.html', content: readableHtml, type: 'text/html;charset=utf-8'}
     ];
-    const captionFiles=KumoCaptions.files(clip.captions||[]);targetedClip.savedCaptions=captionFiles.map(f=>f.name);
+    updateProgress(84, '正在保存原字幕', '保留页面提供的字幕，翻译和视频理解在 AI 整理时进行');
+    const captionResult=await withPageReferer(targetedClip,fetchImpl=>KumoCaptions.prepare(targetedClip,{fetchImpl,download:downloadVideoEl.checked,permission:mediaPermissionGranted}));
+    const captionFiles=captionResult.files;targetedClip.savedCaptions=captionFiles.map(f=>f.name);targetedClip.mediaProcessing=captionResult.processing;
     files[0].content=KumoFormat.buildMarkdown(targetedClip,note,Boolean(screenshot));files[1].content=KumoFormat.buildMetadata(targetedClip,note,Boolean(screenshot));
+    files[2].content=KumoFormat.buildReadableHtml(targetedClip);
     const assetFiles = [...preparedImages.files, ...prepared.files, ...captionFiles, ...(frameFile ? [frameFile] : [])];
     files.push(...assetFiles);
     if (screenshot) files.push({name: 'viewport.png', content: screenshot, type: 'image/png'});

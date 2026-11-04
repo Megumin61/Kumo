@@ -1,9 +1,12 @@
 (function (scope) {
   // Large videos are fine as long as data keeps arriving: the timer restarts on every chunk.
-  async function fetchBlobWithProgress(url, timeoutMs, onProgress, fetchImpl = fetch, maxBytes = Infinity, {headers} = {}) {
+  async function fetchBlobWithProgress(url, timeoutMs, onProgress, fetchImpl = fetch, maxBytes = Infinity, {headers, signal} = {}) {
     const controller = new AbortController();
     let reader = null, stalled = false;
     const stall = () => { stalled = true; controller.abort(); reader?.cancel().catch(() => {}); };
+    const cancel = () => { controller.abort(); reader?.cancel().catch(() => {}); };
+    signal?.addEventListener('abort', cancel, {once: true});
+    if (signal?.aborted) cancel();
     let timer = setTimeout(stall, timeoutMs);
     const touch = () => { clearTimeout(timer); timer = setTimeout(stall, timeoutMs); };
     try {
@@ -38,18 +41,21 @@
       blob.partial = response.status === 206;
       return blob;
     } catch (error) {
+      controller.abort();
+      if (reader) await reader.cancel().catch(() => {});
       if (stalled || error?.name === 'AbortError') throw new Error('video_download_stalled');
       throw error;
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
     }
   }
 
-  async function fetchText(url, timeoutMs, fetchImpl) {
+  async function fetchText(url, timeoutMs, fetchImpl, credentials = 'include') {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetchImpl(url, {credentials: 'include', signal: controller.signal});
+      const response = await fetchImpl(url, {credentials, signal: controller.signal});
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.text();
     } finally {
@@ -66,7 +72,7 @@
       const decoded = raw.replace(/\\u002F/gi, '/').replace(/\\\//g, '/').replace(/\\u0026/gi, '&').replace(/&amp;/g, '&').replace(/\\+$/g, '');
       try {
         const url = new URL(decoded);
-        if (url.hostname !== 'video.twimg.com' || !/\/(?:amplify_video|ext_tw_video|tweet_video)\//i.test(url.pathname)) continue;
+        if (url.hostname !== 'video.twimg.com' || !/\/(?:amplify_video|ext_tw_video|tweet_video)\//i.test(url.pathname) || /\/aud\//i.test(url.pathname)) continue;
         const mediaId = url.pathname.match(/\/(?:amplify_video|ext_tw_video)\/(\d+)/i)?.[1] || url.pathname.match(/\/tweet_video\/([a-z0-9_-]+)\.mp4$/i)?.[1];
         if (!mediaId || (allowed.size && !allowed.has(mediaId))) continue;
         const resolution = url.pathname.match(/\/(\d{2,4})x(\d{2,4})\//i);
@@ -117,7 +123,7 @@
   const remuxer = () => scope.KumoMp4 || (typeof require === 'function' ? require('./mp4-remux.js') : null);
 
   async function prepareVideos(sourceClip, {download = true, permission = true, resolveX, fetchImpl = fetch, onProgress, maxBytes = MAX_TOTAL_BYTES, maxVideoBytes = MAX_VIDEO_BYTES} = {}) {
-    let videos = (sourceClip.videos || []).slice(0, MAX_VIDEOS).map(video => ({...video}));
+    let videos = (sourceClip.videos || []).map(video => ({...video}));
     const diagnostics = [];
     if (download && permission && sourceClip.platformId === 'x' && resolveX && (!videos.length || videos.some(video => !['direct_file', 'stream_manifest'].includes(video.kind) || /\/vid\/avc1\/0\/0\/|\/init[.-]/i.test(video.url)))) {
       try {
@@ -125,10 +131,15 @@
         const resolved = await resolveX(sourceClip.url, ids);
         diagnostics.push({stage: 'resolve', count: resolved.length});
         if (!resolved.length && videos.length) throw new Error('x_media_variant_not_found');
-        const originalById = new Map(videos.map(video => [posterMediaId(video), video]));
-        const resolvedIds = new Set(resolved.map(video => video.mediaId));
-        videos = videos.filter(video => !resolvedIds.has(posterMediaId(video)) && !(resolved.length === 1 && !posterMediaId(video) && video.kind === 'blob'));
-        videos.push(...resolved.map(video => ({...(originalById.get(video.mediaId) || {}), ...video, origin: video.origin || 'x_public_page', downloadError: undefined, sourceResolutionError: undefined})));
+        const remaining = new Map(resolved.map(video => [video.mediaId, video]));
+        // Preserve player order: caption videoIndex refers to the extracted list.
+        videos = videos.map(original => {
+          const match = remaining.get(posterMediaId(original)) || (resolved.length === 1 && videos.length === 1 && !posterMediaId(original) && original.kind === 'blob' ? resolved[0] : null);
+          if (!match) return original;
+          remaining.delete(match.mediaId);
+          return {...original, ...match, origin: match.origin || 'x_public_page', downloadError: undefined, sourceResolutionError: undefined};
+        });
+        videos.push(...remaining.values());
       } catch (error) {
         diagnostics.push({stage: 'resolve', error: error?.message || 'x_resolution_failed'});
         videos.forEach(video => { video.sourceResolutionError = error?.message || 'x_resolution_failed'; });
@@ -140,6 +151,7 @@
       const video = videos[index];
       if (!download) { video.downloadStatus = 'reference_only'; video.downloadError = 'user_selected_video_reference'; continue; }
       if (!permission) { video.downloadStatus = 'remote_only'; video.downloadError = 'media_download_permission_denied'; continue; }
+      if (index >= MAX_VIDEOS) { video.downloadStatus = 'remote_only'; video.downloadError = 'video_count_limit'; continue; }
       const variants = videoVariants(video);
       video.attempts = [];
       for (const variant of variants) {
@@ -176,8 +188,9 @@
   function videoVariants(video) {
     const seen = new Set();
     return [video, ...(video.alternatives || [])].filter(item => {
-      if (!item || item.kind === 'unresolved' || item.kind === 'blob' || !/^https?:/i.test(item.url || '') || seen.has(item.url)) return false;
-      seen.add(item.url);
+      const key = `${item?.url}\n${item?.audioUrl || ''}`;
+      if (!item || item.kind === 'unresolved' || item.kind === 'blob' || !/^https?:/i.test(item.url || '') || seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
   }
@@ -186,10 +199,11 @@
     const mp4 = remuxer();
     if (variant.kind === 'dash_pair' && variant.audioUrl) {
       let received = 0;
-      const part = url => fetchBlobWithProgress(url, IDLE_TIMEOUT, value => onProgress?.(received + value, 0), fetchImpl, maxBytes);
-      const videoPart = await part(variant.url);
+      const part = (url, budget) => fetchBlobWithProgress(url, IDLE_TIMEOUT, value => onProgress?.(received + value, 0), fetchImpl, budget);
+      const videoPart = await part(variant.url, maxBytes);
       received = videoPart.size;
-      const audioPart = await part(variant.audioUrl);
+      if (received >= maxBytes) throw new Error('video_too_large');
+      const audioPart = await part(variant.audioUrl, maxBytes - received);
       if (!mp4) throw new Error('video_remuxer_unavailable');
       return mp4.fromFragmented([[videoPart], [audioPart]]);
     }
@@ -251,18 +265,20 @@
     return {segments, map, ended: /#EXT-X-ENDLIST/.test(text)};
   }
 
-  async function fetchPart(url, range, fetchImpl, onProgress, maxBytes) {
-    if (!range) return fetchBlobWithProgress(url, IDLE_TIMEOUT, onProgress, fetchImpl, maxBytes);
-    const blob = await fetchBlobWithProgress(url, IDLE_TIMEOUT, onProgress, fetchImpl, Math.max(maxBytes, range.start + range.length), {headers: {Range: `bytes=${range.start}-${range.start + range.length - 1}`}});
+  async function fetchPart(url, range, fetchImpl, onProgress, maxBytes, signal) {
+    if (!range) return fetchBlobWithProgress(url, IDLE_TIMEOUT, onProgress, fetchImpl, maxBytes, {signal});
+    const blob = await fetchBlobWithProgress(url, IDLE_TIMEOUT, onProgress, fetchImpl, maxBytes, {signal, headers: {Range: `bytes=${range.start}-${range.start + range.length - 1}`}});
     // A server that ignores Range returns the whole file; cut the requested piece out of it.
-    return blob.partial || blob.size === range.length ? blob.slice(0, range.length) : blob.slice(range.start, range.start + range.length);
+    const part = blob.partial || blob.size === range.length ? blob.slice(0, range.length) : blob.slice(range.start, range.start + range.length);
+    if (part.size !== range.length) throw new Error('hls_truncated_range');
+    return part;
   }
 
-  async function decryptSegment(blob, segment, keys, fetchImpl) {
+  async function decryptSegment(blob, segment, keys, fetchImpl, signal) {
     if (!segment.key) return blob;
     const subtle = globalThis.crypto?.subtle;
     if (!subtle) throw new Error('hls_decryption_unavailable');
-    if (!keys.has(segment.key.url)) keys.set(segment.key.url, fetchBlobWithProgress(segment.key.url, 20000, null, fetchImpl, 1024).then(async blob => subtle.importKey('raw', await blob.arrayBuffer(), 'AES-CBC', false, ['decrypt'])));
+    if (!keys.has(segment.key.url)) keys.set(segment.key.url, fetchBlobWithProgress(segment.key.url, 20000, null, fetchImpl, 1024, {signal}).then(async blob => subtle.importKey('raw', await blob.arrayBuffer(), 'AES-CBC', false, ['decrypt'])));
     const key = await keys.get(segment.key.url);
     const iv = new Uint8Array(16);
     if (segment.key.iv) {
@@ -277,13 +293,21 @@
     if (!playlist.ended) throw new Error('hls_live_stream_not_supported');
     if (!playlist.segments.length) throw new Error('hls_playlist_has_no_segments');
     const keys = new Map(), blobs = new Array(playlist.segments.length);
-    const init = playlist.map ? await fetchPart(playlist.map.url, playlist.map.range, fetchImpl, null, maxBytes) : null;
+    const init = playlist.map ? await fetchPart(playlist.map.url, playlist.map.range, fetchImpl, null, maxBytes - state.done, state.controller.signal) : null;
+    state.done += init?.size || 0;
+    if (state.done > maxBytes) throw new Error('video_too_large');
     let next = 0;
     async function worker() {
       while (next < playlist.segments.length) {
+        if (state.failed) throw new Error('hls_download_cancelled');
         const index = next++, segment = playlist.segments[index];
-        let blob = await fetchPart(segment.url, segment.range, fetchImpl, received => { state.receiving.set(`${url}#${index}`, received); state.report(); }, maxBytes);
-        blob = await decryptSegment(blob, segment, keys, fetchImpl);
+        let blob = await fetchPart(segment.url, segment.range, fetchImpl, received => {
+          if (state.failed) throw new Error('hls_download_cancelled');
+          state.receiving.set(`${url}#${index}`, received);
+          if (state.done + [...state.receiving.values()].reduce((sum, value) => sum + value, 0) > maxBytes) throw new Error('video_too_large');
+          state.report();
+        }, maxBytes - state.done, state.controller.signal);
+        blob = await decryptSegment(blob, segment, keys, fetchImpl, state.controller.signal);
         state.receiving.delete(`${url}#${index}`);
         state.done += blob.size;
         if (state.done > maxBytes) throw new Error('video_too_large');
@@ -292,7 +316,8 @@
         state.report();
       }
     }
-    await Promise.all(Array.from({length: Math.min(4, playlist.segments.length)}, worker));
+    try { await Promise.all(Array.from({length: Math.min(4, playlist.segments.length)}, worker)); }
+    catch (error) { state.failed = true; state.controller.abort(); throw error; }
     const format = init ? 'fmp4' : await remuxer().sniff(blobs[0]);
     return {format: format === 'mp4' ? 'fmp4' : format, parts: init ? [init, ...blobs] : blobs, discontinuities: playlist.segments.map((segment, index) => segment.discontinuity ? index : -1).filter(index => index >= 0)};
   }
@@ -310,7 +335,7 @@
       const group = master.audio.filter(item => item.group === selected.audioGroup && item.url);
       audioUrl = (group.find(item => item.isDefault) || group[0])?.url || '';
     }
-    const state = {done: 0, completed: 0, receiving: new Map(), report() { onProgress?.({received: state.done + [...state.receiving.values()].reduce((sum, value) => sum + value, 0), expected: 0, completed: state.completed}); }};
+    const state = {done: 0, completed: 0, controller: new AbortController(), receiving: new Map(), report() { onProgress?.({received: state.done + [...state.receiving.values()].reduce((sum, value) => sum + value, 0), expected: 0, completed: state.completed}); }};
     const options = {fetchImpl, onProgress, maxBytes, state};
     const video = videoUrl === manifestUrl && manifestText !== undefined
       ? await downloadPlaylistText(manifestUrl, text, options)
@@ -364,7 +389,71 @@
     return findXVideoVariants(html, targetMediaIds);
   }
 
-  const api = {fetchBlobWithProgress, downloadHls, downloadHlsFmp4, downloadVideoVariant, parseMasterPlaylist, parseMediaPlaylist, findXVideoVariants, findXPostMedia, prepareVideos, resolveXVideoVariants, validateVideoBlob, MAX_VIDEOS};
+  // The player may receive its variants after the HTML shell was delivered.
+  // Read only the requested public post's own media, never quotes/recommendations.
+  function findXSyndicationVideoVariants(text, sourceId, targetMediaIds = []) {
+    if (!/^\d{1,25}$/.test(String(sourceId))) throw new Error('invalid_x_status_id');
+    if (String(text).length > 2 * 1024 * 1024) throw new Error('x_embed_response_too_large');
+    const data = JSON.parse(text);
+    if (String(data?.id_str || '') !== String(sourceId)) throw new Error('x_embed_status_mismatch');
+    const items = (Array.isArray(data.mediaDetails) ? data.mediaDetails : []).filter(item => {
+      if (!['video', 'animated_gif'].includes(item?.type)) return false;
+      const owner = String(item.expanded_url || '').match(/\/status\/(\d+)(?:\/|$)/)?.[1];
+      return !owner || owner === String(sourceId);
+    }).map(item => ({poster: item.media_url_https, variants: item.video_info?.variants || []}));
+    if (!items.length && data.video && (!data.video.videoId?.id || String(data.video.videoId.id) === String(sourceId))) {
+      items.push({poster: data.video.poster, variants: data.video.variants || []});
+    }
+    const allowed = new Set(targetMediaIds.map(String).filter(Boolean));
+    const found = new Map();
+    for (const item of items) {
+      const posterId = posterMediaId(item);
+      if (allowed.size && posterId && !allowed.has(posterId)) continue;
+      const ids = allowed.size ? [...allowed] : posterId ? [posterId] : [];
+      for (const variant of findXVideoVariants(JSON.stringify(item.variants), ids)) {
+        if (!found.has(variant.mediaId)) found.set(variant.mediaId, {...variant, poster: item.poster || '', origin: 'x_syndication'});
+      }
+    }
+    return [...found.values()];
+  }
+
+  async function resolveXVideoFromSyndication(pageUrl, targetMediaIds = [], fetchImpl = fetch) {
+    const page = new URL(pageUrl);
+    const id = page.pathname.match(/^\/[^/]+\/status\/(\d{1,25})(?:\/|$)/)?.[1];
+    if (page.protocol !== 'https:' || !['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'].includes(page.hostname) || !id || page.username || page.password || page.port) throw new Error('invalid_x_status_url');
+    const endpoint = new URL('https://cdn.syndication.twimg.com/tweet-result');
+    endpoint.searchParams.set('id', id);
+    endpoint.searchParams.set('lang', 'en');
+    endpoint.searchParams.set('token', '0');
+    const text = await fetchText(endpoint.href, 10000, fetchImpl, 'omit');
+    return findXSyndicationVideoVariants(text, id, targetMediaIds);
+  }
+
+
+  // Scope Referer to one exact media URL, and serialize competing requests across
+  // popup/offscreen contexts. Release after headers: the body can keep streaming.
+  function createPageMediaFetch(target, {fetchImpl = fetch, api = scope.chrome, locks = scope.navigator?.locks} = {}) {
+    let page;
+    try { page = new URL(target.capturedUrl || target.url); } catch { return fetchImpl; }
+    if (!/^https?:$/.test(page.protocol) || page.username || page.password || !api?.declarativeNetRequest?.updateSessionRules || !api.runtime?.id || !locks?.request) return fetchImpl;
+    page.search = ''; page.hash = '';
+    return async (input, init = {}) => {
+      const address = new URL(typeof input === 'string' ? input : input.url || input.href);
+      if (!/^https?:$/.test(address.protocol) || page.protocol === 'https:' && address.protocol === 'http:') return fetchImpl(input, init);
+      let hash = 2166136261;
+      for (const character of address.href) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+      const id = 100000000 + (hash >>> 0) % 1000000000;
+      const condition = {regexFilter: '^' + address.href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', isUrlFilterCaseSensitive: true, initiatorDomains: [api.runtime.id], resourceTypes: ['xmlhttprequest', 'media', 'other']};
+      return locks.request('kumo-media-referer:' + id, {...(init.signal ? {signal: init.signal} : {})}, async () => {
+        try { await api.declarativeNetRequest.updateSessionRules({removeRuleIds: [id], addRules: [{id, priority: 1, action: {type: 'modifyHeaders', requestHeaders: [{header: 'referer', operation: 'set', value: page.href}]}, condition}]}); }
+        catch { return fetchImpl(input, init); }
+        try { return await fetchImpl(input, init); }
+        finally { await api.declarativeNetRequest.updateSessionRules({removeRuleIds: [id]}).catch(() => {}); }
+      });
+    };
+  }
+
+  const api = {fetchBlobWithProgress, downloadHls, downloadHlsFmp4, downloadVideoVariant, parseMasterPlaylist, parseMediaPlaylist, findXVideoVariants, findXPostMedia, prepareVideos, resolveXVideoVariants, findXSyndicationVideoVariants, resolveXVideoFromSyndication, validateVideoBlob, createPageMediaFetch, MAX_VIDEOS};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else scope.KumoMedia = api;
 })(globalThis);

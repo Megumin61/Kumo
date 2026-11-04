@@ -8,7 +8,7 @@
     // Videos are saved by default. Older settings stored video:false whenever any option changed,
     // so only a choice made after this default (videoChoice) can turn video saving off.
     return {screenshot:value.screenshot===true,images:value.images!==false,video:value.videoChoice===2?value.video!==false:true,comments};}
-  function saveOptions(storage,value){storage.setItem('kumo-capture-options:v1',JSON.stringify({screenshot:!!value.screenshot,images:!!value.images,video:!!value.video,videoChoice:2,comments:[0,5,10].includes(value.comments)?value.comments:10,commentPreference:true}));}
+  function saveOptions(storage,value){const before=options(storage);storage.setItem('kumo-capture-options:v1',JSON.stringify({screenshot:value.screenshot??before.screenshot,images:value.images??before.images,video:value.video??before.video,videoChoice:2,comments:[0,5,10].includes(value.comments)?value.comments:before.comments,commentPreference:true}));}
   scope.KumoDestination={savedProfile,initialMode,options,saveOptions};
   if(typeof module==='object')module.exports=scope.KumoDestination;
 })(globalThis);
