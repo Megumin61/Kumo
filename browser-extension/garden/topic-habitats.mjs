@@ -1,8 +1,10 @@
 // Small, quiet ground patches reveal real topic clusters within a domain.
 export function topicHabitats(points){
- const all=[...points.values()],out=[];
+ const all=[...points.values()],out=[],byTopic=new Map();
+ // Group once: filtering every point for every topic grew quadratically with the library.
+ for(const p of all)if(p.owner&&p.clusterTopic){const key=p.owner+'\u0000'+p.clusterTopic;if(!byTopic.has(key))byTopic.set(key,[]);byTopic.get(key).push(p);}
  for(const topic of all.filter(p=>p.record.kind==='topic'&&p.owner)){
-  const members=all.filter(p=>p.owner===topic.owner&&p.clusterTopic===topic.key);if(!members.length)continue;
+  const members=byTopic.get(topic.owner+'\u0000'+topic.key)||[];if(!members.length)continue;
   const group=[topic,...members],left=Math.min(...group.map(p=>p.x-p.size*.5)),right=Math.max(...group.map(p=>p.x+p.size*.5)),top=Math.min(...group.map(p=>p.y-p.size*.5)),bottom=Math.max(...group.map(p=>p.y+p.size*.5));
   const x=(left+right)/2,y=(top+bottom)/2,hull=convexHull(group.flatMap(p=>Array.from({length:20},(_,i)=>{const a=i/20*Math.PI*2,r=p.size*.52+4;return [p.x+Math.cos(a)*r-x,p.y+Math.sin(a)*r-y];})));
   out.push({key:topic.key,owner:topic.owner,x,y,rx:(right-left)/2+9,ry:(bottom-top)/2+9,hull,members:members.map(p=>p.key)});

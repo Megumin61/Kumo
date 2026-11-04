@@ -3,10 +3,12 @@ import {hashSeed} from './garden-life.mjs';
 // Themes own non-overlapping sectors around the whole domain. New posts stay outside
 // their parent theme's radial ring, so they never grow back through the domain centre.
 export function radialMemberOffsets(hub,members,R){
- const squash=.8,topics=members.filter(p=>p.record?.kind==='topic'),placed=new Map(),phase=hashSeed(hub.key+':radial-phase')*Math.PI*2,weights=topics.map(t=>Math.max(1,Math.sqrt(members.filter(p=>p.clusterTopic===t.key).length))),total=weights.reduce((a,b)=>a+b,0)||1,sectors=new Map();let edge=phase;
- const spatial=new Map(),cellSize=96,maxSize=Math.max(0,...members.map(p=>p.size));
- const place=(p,o)=>{placed.set(p.key,o);const key=Math.floor(o[0]/cellSize)+','+Math.floor(o[1]/cellSize);if(!spatial.has(key))spatial.set(key,[]);spatial.get(key).push({point:p,offset:o});};
- const clear=(p,o)=>{const half=p.size/2+10;if(Math.hypot(...o)<(hub.size+p.size)/2+22)return false;if(Math.abs(o[0])<86+half&&o[1]>hub.size/2+4-half&&o[1]<hub.size/2+48+half)return false;const sector=sectors.get(p.clusterTopic||p.key);if(sector&&sector.width<6){const tau=Math.PI*2,a=sector.min+((Math.atan2(o[1]/squash,o[0])-sector.min)%tau+tau)%tau,pad=Math.asin(Math.min(1,(p.size*.52+7)/squash/Math.hypot(o[0],o[1]/squash)));if(a-sector.min<pad||sector.max-a<pad)return false;}const reach=(p.size+maxSize)/2+13;for(let x=Math.floor((o[0]-reach)/cellSize);x<=Math.floor((o[0]+reach)/cellSize);x++)for(let y=Math.floor((o[1]-reach)/cellSize);y<=Math.floor((o[1]+reach)/cellSize);y++)for(const {point:other,offset:q} of spatial.get(x+','+y)||[])if(Math.hypot(o[0]-q[0],o[1]-q[1])<(p.size+other.size)/2+13)return false;return true;};
+ // Count each theme's posts once; the per-theme filter was quadratic on large libraries.
+ const perTopic=new Map();for(const p of members)if(p.clusterTopic)perTopic.set(p.clusterTopic,(perTopic.get(p.clusterTopic)||0)+1);
+ const squash=.8,topics=members.filter(p=>p.record?.kind==='topic'),placed=new Map(),phase=hashSeed(hub.key+':radial-phase')*Math.PI*2,weights=topics.map(t=>Math.max(1,Math.sqrt(perTopic.get(t.key)||0))),total=weights.reduce((a,b)=>a+b,0)||1,sectors=new Map();let edge=phase;
+ const spatial=new Map(),cellSize=96,maxSize=Math.max(0,...members.map(p=>p.size)),cellKey=(x,y)=>(x+50000)*100000+(y+50000);
+ const place=(p,o)=>{placed.set(p.key,o);const key=cellKey(Math.floor(o[0]/cellSize),Math.floor(o[1]/cellSize));if(!spatial.has(key))spatial.set(key,[]);spatial.get(key).push({point:p,offset:o});};
+ const clear=(p,o)=>{const half=p.size/2+10;if(Math.hypot(...o)<(hub.size+p.size)/2+22)return false;if(Math.abs(o[0])<86+half&&o[1]>hub.size/2+4-half&&o[1]<hub.size/2+48+half)return false;const sector=sectors.get(p.clusterTopic||p.key);if(sector&&sector.width<6){const tau=Math.PI*2,a=sector.min+((Math.atan2(o[1]/squash,o[0])-sector.min)%tau+tau)%tau,pad=Math.asin(Math.min(1,(p.size*.52+7)/squash/Math.hypot(o[0],o[1]/squash)));if(a-sector.min<pad||sector.max-a<pad)return false;}const reach=(p.size+maxSize)/2+13;for(let x=Math.floor((o[0]-reach)/cellSize);x<=Math.floor((o[0]+reach)/cellSize);x++)for(let y=Math.floor((o[1]-reach)/cellSize);y<=Math.floor((o[1]+reach)/cellSize);y++){const cell=spatial.get(cellKey(x,y));if(!cell)continue;for(const {point:other,offset:q} of cell){const dx=o[0]-q[0],dy=o[1]-q[1];if(Math.sqrt(dx*dx+dy*dy)<(p.size+other.size)/2+13)return false;}}return true;};
  topics.forEach((t,i)=>{const width=Math.PI*2*weights[i]/total,jitter=(scatter(t.key+':heading')-.5)*Math.min(.45,width*.28);sectors.set(t.key,{min:edge+.06,max:edge+width-.06,angle:edge+width/2+jitter,width,radius:.88+scatter(t.key+':reach')*.24});edge+=width;});
  // Place each theme close to its domain independently. A blocked caption or a
  // crowded sector should not inflate the radius of every other theme as well.
@@ -15,7 +17,9 @@ export function radialMemberOffsets(hub,members,R){
   if(!found)throw Error('More room required for radial topics');place(t,found);
  }
  for(const p of members.filter(p=>p.record?.kind!=='topic')){const sector=sectors.get(p.clusterTopic),parent=placed.get(p.clusterTopic),lo=sector?.min??phase,hi=sector?.max??phase+Math.PI*2,base=lo+(hi-lo)*(.12+scatter(p.key+':fan')*.76);let found;
-  for(let row=0;row<Math.ceil(R/24)&&!found;row++){const radius=(parent?Math.hypot(parent[0],parent[1]/squash):hub.size/2+80)+(sector?94:0)+scatter(p.key+':length')*24+row*24;if(radius+p.size/squash/2+12>R)break;const angles=[...Array.from({length:49},(_,i)=>lo+(hi-lo)*(i+.5)/49),base].sort((a,b)=>Math.abs(a-base)-Math.abs(b-base));
+  // The candidate angles do not depend on the row, so they are ordered once per post.
+  const angles=[...Array.from({length:49},(_,i)=>lo+(hi-lo)*(i+.5)/49),base].sort((a,b)=>Math.abs(a-base)-Math.abs(b-base)),start=(parent?Math.hypot(parent[0],parent[1]/squash):hub.size/2+80)+(sector?94:0)+scatter(p.key+':length')*24;
+  for(let row=0;row<Math.ceil(R/24)&&!found;row++){const radius=start+row*24;if(radius+p.size/squash/2+12>R)break;
    for(const a of angles){const o=[Math.cos(a)*radius,Math.sin(a)*radius*squash];if(parent&&((o[0]-parent[0])*parent[0]+(o[1]-parent[1])*parent[1]<=0||Math.hypot(...o)<Math.hypot(...parent)+40))continue;if(clear(p,o)){found=o;break;}}
   }if(!found)throw Error('More room required for radial posts');place(p,found);
  }

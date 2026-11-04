@@ -50,17 +50,38 @@ function projectMember(p,hub){let dx=p.x-hub.x,dy=p.y-hub.y,d=Math.hypot(dx,dy),
 }
 export function relaxMembers(points,pinned=null){const members=[...points.values()].filter(p=>p.owner);for(let pass=0;pass<32;pass++){let moved=0;constrainOutwardGrowth(points,pinned);for(const p of members)moved+=projectMember(p,points.get(p.owner));for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){const a=members[i],b=members[j];if(a.owner!==b.owner)continue;let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=(a.size+b.size)/2+12;if(d>=min-.001)continue;if(d<.001){const angle=hashSeed(a.key+'|'+b.key)*Math.PI*2;dx=Math.cos(angle);dy=Math.sin(angle);d=1;}const shift=min-d+.01,wa=a.key===pinned?0:b.key===pinned?1:.5,wb=1-wa;a.x-=dx/d*shift*wa;a.y-=dy/d*shift*wa;b.x+=dx/d*shift*wb;b.y+=dy/d*shift*wb;moved++;}if(!moved)break;}for(const p of members)projectMember(p,points.get(p.owner));constrainOutwardGrowth(points,pinned);return points;}
 
+// Member placement depends only on the colony's own contents. Large libraries
+// would otherwise repeat the same collision search on every open, resize or refresh.
+const OFFSET_CACHE_KEY='kumo:garden:colony-offsets:v1',offsetCache=new Map();let offsetCacheLoaded=false;
+function storage(){try{return globalThis.localStorage||null;}catch{return null;}}
+function loadOffsetCache(){if(offsetCacheLoaded)return;offsetCacheLoaded=true;try{const values=JSON.parse(storage()?.getItem(OFFSET_CACHE_KEY)||'null');if(Array.isArray(values))for(const [key,offsets]of values)if(typeof key==='string'&&Array.isArray(offsets)&&offsets.every(o=>Array.isArray(o)&&o.length===2&&o.every(Number.isFinite)))offsetCache.set(key,offsets);}catch{}}
+let offsetSaveTimer=0;
+function saveOffsetCache(){const store=storage();if(!store)return;clearTimeout(offsetSaveTimer);offsetSaveTimer=setTimeout(()=>{try{store.setItem(OFFSET_CACHE_KEY,JSON.stringify([...offsetCache].slice(-24)));}catch{}},400);}
+// The placement code itself is part of the key, so editing the algorithm never reuses old offsets.
+let algorithm='';function algorithmStamp(){if(!algorithm){let h=2166136261;const text=memberOffsets.toString()+radialMemberOffsets.toString()+colonyRadius.toString();for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);algorithm=(h>>>0).toString(36);}return algorithm;}
+function offsetSignature(hub,members,R,mode){let h=2166136261;const text=[algorithmStamp(),mode,hub.key,hub.size.toFixed(3),R.toFixed(3),...members.map(m=>m.key+':'+m.size.toFixed(3)+':'+(m.clusterTopic||'')+':'+m.record.kind)].join('|');for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);return hub.key+'#'+members.length+'#'+(h>>>0).toString(36)+'#'+text.length;}
+export function cachedMemberOffsets(hub,members,R,mode,compute){
+ loadOffsetCache();const key=offsetSignature(hub,members,R,mode),hit=offsetCache.get(key);
+ if(hit&&hit.length===members.length){offsetCache.delete(key);offsetCache.set(key,hit);return hit.map(o=>[...o]);}
+ const offsets=compute();offsetCache.delete(key);offsetCache.set(key,offsets.map(o=>[o[0],o[1]]));while(offsetCache.size>48)offsetCache.delete(offsetCache.keys().next().value);saveOffsetCache();return offsets;
+}
+
 export function radialCollectionLayout(model,options={}){
  const graph={...clusterLayout(model,options),collection:true,radial:true},{width=830,height=450,positions=new Map()}=options;
  // Every real topic, including a single-post topic, anchors its own radial branch.
- const center={x:width*.5,y:height*.5},all=[...graph.points.values()],hubs=all.filter(p=>!p.owner);
+ const center={x:width*.5,y:height*.5},all=[...graph.points.values()],hubs=all.filter(p=>!p.owner),owned=new Map(hubs.map(h=>[h.key,[]]));
+ for(const p of all)if(p.owner)owned.get(p.owner)?.push(p);
+ const membershipEdges=new Map();for(const edge of graph.edges)if(edge.kind==='membership'){if(!membershipEdges.has(edge.to))membershipEdges.set(edge.to,[]);membershipEdges.get(edge.to).push(edge);}
  for(const hub of hubs){
-  const members=all.filter(p=>p.owner===hub.key).sort((a,b)=>Number(b.record.kind==='topic')-Number(a.record.kind==='topic')||b.size-a.size||String(a.key).localeCompare(b.key));
-  hub.size=options.progressive?domainDisplaySize(hub.record.displayCount??hub.record.count??0):domainNodeSize();hub.visualExtent=0;hub.growth=gardenGrowth(model,hub.record);for(const m of members){m.size=options.progressive?hierarchyDisplaySize(model,m.record):memberNodeSize(m.record,hub.size);if(m.record.kind==='source'){const topic=members.filter(t=>t.record.kind==='topic'&&t.record.members?.includes(m.key)).sort((a,b)=>a.record.members.length-b.record.members.length||a.key.localeCompare(b.key))[0];m.clusterTopic=topic?.key||null;m.parent=m.clusterTopic||hub.key;}}
-  let R=colonyRadius(hub.size,members.map(m=>m.size),hub.growth.density),offsets=options.progressive&&!options.full?branchMemberOffsets(hub,members):null;for(let attempt=0;!offsets&&attempt<16;attempt++){try{offsets=memberOffsets(hub,members,R,hashSeed(hub.key)*6.28);break;}catch(error){if(attempt===15)throw error;R*=1.1;}}
+  const members=(owned.get(hub.key)||[]).sort((a,b)=>Number(b.record.kind==='topic')-Number(a.record.kind==='topic')||b.size-a.size||String(a.key).localeCompare(b.key));
+  // Each post follows its smallest containing topic (ties by key), indexed once per colony.
+  const smallest=new Map();for(const t of members)if(t.record.kind==='topic')for(const k of t.record.members||[]){const best=smallest.get(k);if(!best||t.record.members.length-best.record.members.length<0||t.record.members.length===best.record.members.length&&t.key.localeCompare(best.key)<0)smallest.set(k,t);}
+  hub.size=options.progressive?domainDisplaySize(hub.record.displayCount??hub.record.count??0):domainNodeSize();hub.visualExtent=0;hub.growth=gardenGrowth(model,hub.record);for(const m of members){m.size=options.progressive?hierarchyDisplaySize(model,m.record):memberNodeSize(m.record,hub.size);if(m.record.kind==='source'){const topic=smallest.get(m.key);m.clusterTopic=topic?.key||null;m.parent=m.clusterTopic||hub.key;}}
+  let R=colonyRadius(hub.size,members.map(m=>m.size),hub.growth.density),offsets=options.progressive&&!options.full?branchMemberOffsets(hub,members):null;
+  if(!offsets)offsets=cachedMemberOffsets(hub,members,R,options.progressive?'progressive':'fixed',()=>{let found=null;for(let attempt=0;!found&&attempt<16;attempt++){try{found=memberOffsets(hub,members,R,hashSeed(hub.key)*6.28);break;}catch(error){if(attempt===15)throw error;R*=1.1;}}return found;});
   // Search room is not empty garden: fit the final boundary to the actual nodes.
   R=Math.max(hub.size/2+48,...offsets.map((o,i)=>Math.hypot(o[0],o[1]/SQUASH)+members[i].size/(2*SQUASH)+16));
-  for(const edge of graph.edges){const p=members.find(m=>m.key===edge.to);if(edge.kind==='membership'&&p)edge.from=options.progressive?p.parent:(p.clusterTopic||hub.key);}
+  for(const p of members)for(const edge of membershipEdges.get(p.key)||[])edge.from=options.progressive?p.parent:(p.clusterTopic||hub.key);
   const shape=hashSeed(hub.key+':shape'),aspect=.95+shape*.1,boost=1+Math.min(.05,(hub.record.displayCount||0)*.002);hub.colonyR=R;hub.plot={rx:(R+4)*aspect*boost,ry:((R+4)*SQUASH+10)/aspect*boost,cy:0,tilt:(shape-.5)*14,flow:.9+hashSeed(hub.key+':flow')*.6};
   offsets.forEach((o,i)=>{members[i].offset=o;members[i].vx=0;members[i].vy=0;});
  }
