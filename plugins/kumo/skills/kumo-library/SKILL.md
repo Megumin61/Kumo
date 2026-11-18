@@ -12,6 +12,8 @@ Keep all existing user-visible labels and assignments unchanged during compilati
 
 Keep the reader's path shallow: overview → key viewpoints → reusable actions. Write one concrete overview (prefer 1–2 short sentences), at most three main takeaways and three actionable steps; keep extra checks, boundaries and unknowns secondary. Never replace missing evidence with generic advice. Give each compiled card 2–3 short `keywords` (at most 3, fewer or none when evidence is insufficient) that describe its specific content (concept, technique, problem or use case), not repeated collection/domain names. Give knowledge nodes a few keywords too. These AI-derived keywords do not modify user tags or classification. If explicit keywords are absent, omit them. Never substitute topic names, collection labels, titles or placeholder text for content keywords.
 
+**Notes are part of the Wiki.** Practice, experiments, decisions and discussions are saved as notes in `notes/` and compiled like clips (the source scan includes `notes/`). Note cards link to the clips they used with `practices` / `discusses` relations, and topics gain `knowledge.elements` and `knowledge.practice`. Read [notes.md](references/notes.md) before writing, compiling or retrieving notes. There is no note-writing tool yet: write the note files directly when the host has file access and the user authorized it.
+
 ## Task routing
 
 - **Explicit reference**: honor the requested source/title, platform, collection or domain. Use `list_collections` or `wiki_map` to resolve stable IDs when needed; do not silently broaden a named scope. A direct post can be read without compiling a Wiki.

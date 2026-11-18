@@ -7,7 +7,9 @@ const short=z.string().trim().min(1).max(500);
 const cues=z.array(short).max(10);
 const imageResource=z.string().regex(/^(?:assets\/(?:image|frame)-\d{2}\.(?:jpg|jpeg|png|webp|gif)|prepared\/preview-\d{4}\.jpg)$/i);
 const evidence=z.object({view:z.enum(['body','notes','comments','image','transcript','ocr']),quote:z.string().trim().min(1).max(1000),resource:imageResource.optional()});
-const knowledge=z.object({takeaways:cues,steps:cues,checks:cues,openQuestions:cues,evidence:z.array(evidence.extend({sourceId:identifier})).min(1).max(20)});
+const noteElement=z.object({name:z.string().trim().min(1).max(80),use:short.optional(),params:short.optional(),status:z.enum(['实测','仅看过','待复核']),noteIds:z.array(identifier).max(20),sourceIds:z.array(identifier).max(20)});
+const notePractice=z.object({noteId:identifier,case:short,result:short.optional(),artifact:z.string().trim().max(500).optional()});
+const knowledge=z.object({takeaways:cues,steps:cues,checks:cues,openQuestions:cues,elements:z.array(noteElement).max(40).optional(),practice:z.array(notePractice).max(20).optional(),evidence:z.array(evidence.extend({sourceId:identifier})).min(1).max(20)});
 const keywords=z.array(z.string().trim().min(1).max(30)).max(3).optional();
 const node={id:key,name:z.string().trim().min(1).max(80),scope:short,summary:z.string().trim().min(1).max(3000),keywords,triggers:cues,avoidWhen:cues,knowledge:knowledge.optional()};
 const wikiCard=z.object({id:identifier,fingerprint:z.string().regex(/^[a-f0-9]{64}$/),mediaFingerprint:z.string().regex(/^[a-f0-9]{64}$/).optional(),contentType:z.string().max(40).optional(),summary:z.string().trim().min(1).max(4000),keywords,domainIds:z.array(key).min(1).max(5),topicIds:z.array(key).max(10),reuseWhen:cues,avoidWhen:cues,
@@ -37,7 +39,7 @@ const server=new McpServer({name:'kumo',version:'0.13.3'},{instructions:'Kumo is
   tool('read_wiki','Read domain, topic or source card; domain/topic cards are paginated. Stale cards cannot substitute for current source evidence.',{kind:z.enum(['domain','topic','card']),id:z.string().max(100),offset:z.number().int().min(0).default(0),limit:z.number().int().min(1).max(20).default(10)},input=>library.readWiki(input));
   tool('preview_wiki_batch','Preview a bounded AI-compiled batch after reading sources. Upsert domain/topic maps, source cards, evidenced relations. Exact evidence quotes and source fingerprints are validated. Supply existing node IDs when reusing a topic; no new nodes merely for each post.',{
     domains:z.array(z.object({...node,parentDomainId:key.optional()})).max(10),topics:z.array(z.object({...node,domainId:key,parentTopicId:key.optional()})).max(30),cards:z.array(wikiCard).max(20),
-    relations:z.array(z.object({from:identifier,to:identifier,type:z.enum(['supports','contradicts','example','prerequisite','complements']),reason:short,fromQuote:z.string().trim().min(1).max(1000),toQuote:z.string().trim().min(1).max(1000)})).max(50)},input=>library.previewWiki(input));
+    relations:z.array(z.object({from:identifier,to:identifier,type:z.enum(['supports','contradicts','example','prerequisite','complements','practices','discusses']),reason:short,fromQuote:z.string().trim().min(1).max(1000),toQuote:z.string().trim().min(1).max(1000)})).max(50)},input=>library.previewWiki(input));
   tool('list_collections','Read user-visible stable tags/collections and counts. Classified/unclassified are statuses, not extra topical tags.',{},()=>library.collections());
   tool('preview_classification','Propose a user-visible collection for an unclassified source after reading it. Reuse existing labels first; a new label requires preview. Refuses to replace manual classification.',{id:identifier,label:z.string().trim().min(1).max(40),reason:short},input=>library.previewClassification(input));
   if(canWrite){

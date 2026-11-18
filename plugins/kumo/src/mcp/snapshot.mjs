@@ -15,7 +15,7 @@ export function sourceSnapshot(root){
   const files=new Map(),metrics={bodyReads:0,fileReads:0,scans:0};
   const observers=new Map();
   function observe(relative){if(observers.has(relative))return;try{const resolved=realpathSync(path.join(root,relative)),local=path.relative(root,resolved);if(local==='..'||local.startsWith('..'+path.sep)||path.isAbsolute(local))return;const observer=watch(resolved,{persistent:false},()=>{generation++;});observer.unref();observer.on('error',()=>{generation++;observer.close();observers.delete(relative);});observers.set(relative,observer);}catch{}}
-  for(const relative of ['', 'inbox','archive','annotations','wiki','wiki/kumo','domains/kumo-plugin'])observe(relative);
+  for(const relative of ['', 'inbox','archive','notes','annotations','wiki','wiki/kumo','domains/kumo-plugin'])observe(relative);
   async function file(relative,{optional=false,json=false,force=false,max=2*1024*1024}={}){
     const target=path.join(root,relative);
     let info,resolved;
@@ -39,11 +39,11 @@ export function sourceSnapshot(root){
     const tagMap=new Map(array(tags?.tags).map(tag=>[tag.id,tag]));
     const records=new Map(array(organization?.records).map(record=>[record.sourcePath,record]));
     const entries=[];
-    for(const area of ['inbox','archive']){
+    for(const area of ['inbox','archive','notes']){ // notes/: practice and discussion notes compile like clips
       const children=await readdir(path.join(root,area),{withFileTypes:true}).catch(error=>{if(error.code==='ENOENT')return [];throw error;});
       for(const entry of children)if(entry.isDirectory()&&!entry.name.includes('.partial-'))entries.push(area+'/'+entry.name);
     }
-    const directories=new Set(['','inbox','archive','annotations','wiki','wiki/kumo','domains/kumo-plugin',...entries]);
+    const directories=new Set(['','inbox','archive','notes','annotations','wiki','wiki/kumo','domains/kumo-plugin',...entries]);
     for(const [directory,observer]of observers)if(!directories.has(directory)){observer.close();observers.delete(directory);}
     directories.forEach(observe);
     const rows=[],warnings=[],alive=new Set(['tags.json','organization.json','wiki/kumo/state.json']);

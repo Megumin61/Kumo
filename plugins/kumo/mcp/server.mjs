@@ -16457,7 +16457,7 @@ function sourceSnapshot(root) {
     } catch {
     }
   }
-  for (const relative of ["", "inbox", "archive", "annotations", "wiki", "wiki/kumo", "domains/kumo-plugin"]) observe(relative);
+  for (const relative of ["", "inbox", "archive", "notes", "annotations", "wiki", "wiki/kumo", "domains/kumo-plugin"]) observe(relative);
   async function file(relative, { optional: optional2 = false, json: json2 = false, force = false, max = 2 * 1024 * 1024 } = {}) {
     const target = path3.join(root, relative);
     let info, resolved;
@@ -16494,14 +16494,14 @@ function sourceSnapshot(root) {
     const tagMap = new Map(array5(tags?.tags).map((tag2) => [tag2.id, tag2]));
     const records = new Map(array5(organization?.records).map((record2) => [record2.sourcePath, record2]));
     const entries = [];
-    for (const area of ["inbox", "archive"]) {
+    for (const area of ["inbox", "archive", "notes"]) {
       const children = await readdir(path3.join(root, area), { withFileTypes: true }).catch((error2) => {
         if (error2.code === "ENOENT") return [];
         throw error2;
       });
       for (const entry of children) if (entry.isDirectory() && !entry.name.includes(".partial-")) entries.push(area + "/" + entry.name);
     }
-    const directories = /* @__PURE__ */ new Set(["", "inbox", "archive", "annotations", "wiki", "wiki/kumo", "domains/kumo-plugin", ...entries]);
+    const directories = /* @__PURE__ */ new Set(["", "inbox", "archive", "notes", "annotations", "wiki", "wiki/kumo", "domains/kumo-plugin", ...entries]);
     for (const [directory, observer] of observers) if (!directories.has(directory)) {
       observer.close();
       observers.delete(directory);
@@ -24883,7 +24883,7 @@ var short = external_exports.string().trim().min(1).max(500);
 var cues = external_exports.array(short).max(10);
 var imageResource = external_exports.string().regex(/^(?:assets\/(?:image|frame)-\d{2}\.(?:jpg|jpeg|png|webp|gif)|prepared\/preview-\d{4}\.jpg)$/i);
 var evidence = external_exports.object({ view: external_exports.enum(["body", "notes", "comments", "image", "transcript", "ocr"]), quote: external_exports.string().trim().min(1).max(1e3), resource: imageResource.optional() });
-var knowledge = external_exports.object({ takeaways: cues, steps: cues, checks: cues, openQuestions: cues, evidence: external_exports.array(evidence.extend({ sourceId: identifier })).min(1).max(20) });
+var knowledge = external_exports.object({ takeaways: cues, steps: cues, checks: cues, openQuestions: cues, elements: external_exports.array(external_exports.object({ name: external_exports.string().trim().min(1).max(80), use: short.optional(), params: short.optional(), status: external_exports.enum(["实测", "仅看过", "待复核"]), noteIds: external_exports.array(identifier).max(20), sourceIds: external_exports.array(identifier).max(20) })).max(40).optional(), practice: external_exports.array(external_exports.object({ noteId: identifier, case: short, result: short.optional(), artifact: external_exports.string().trim().max(500).optional() })).max(20).optional(), evidence: external_exports.array(evidence.extend({ sourceId: identifier })).min(1).max(20) });
 var keywords = external_exports.array(external_exports.string().trim().min(1).max(30)).max(3).optional();
 var node = { id: key, name: external_exports.string().trim().min(1).max(80), scope: short, summary: external_exports.string().trim().min(1).max(3e3), keywords, triggers: cues, avoidWhen: cues, knowledge: knowledge.optional() };
 var wikiCard = external_exports.object({
@@ -24938,7 +24938,7 @@ function createKumoMcp(library, { canWrite = false } = {}) {
     domains: external_exports.array(external_exports.object({ ...node, parentDomainId: key.optional() })).max(10),
     topics: external_exports.array(external_exports.object({ ...node, domainId: key, parentTopicId: key.optional() })).max(30),
     cards: external_exports.array(wikiCard).max(20),
-    relations: external_exports.array(external_exports.object({ from: identifier, to: identifier, type: external_exports.enum(["supports", "contradicts", "example", "prerequisite", "complements"]), reason: short, fromQuote: external_exports.string().trim().min(1).max(1e3), toQuote: external_exports.string().trim().min(1).max(1e3) })).max(50)
+    relations: external_exports.array(external_exports.object({ from: identifier, to: identifier, type: external_exports.enum(["supports", "contradicts", "example", "prerequisite", "complements", "practices", "discusses"]), reason: short, fromQuote: external_exports.string().trim().min(1).max(1e3), toQuote: external_exports.string().trim().min(1).max(1e3) })).max(50)
   }, (input) => library.previewWiki(input));
   tool("list_collections", "Read user-visible stable tags/collections and counts. Classified/unclassified are statuses, not extra topical tags.", {}, () => library.collections());
   tool("preview_classification", "Propose a user-visible collection for an unclassified source after reading it. Reuse existing labels first; a new label requires preview. Refuses to replace manual classification.", { id: identifier, label: external_exports.string().trim().min(1).max(40), reason: short }, (input) => library.previewClassification(input));
