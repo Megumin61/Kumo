@@ -77,7 +77,7 @@ let bridgeStatus = null;
 let progressStartedAt = 0;
 let progressTimer = null;
 let frameFile = null;
-let completeSaved = false;
+let completeSaved = false, existingCapture = false;
 let targetEpoch=0;
 let bridgeReconnectTimer=null,bridgeReconnectBusy=false;
 const quickSilent=Boolean(globalThis.KumoQuickWorker)||new URLSearchParams(location.search).get('silent')==='1';
@@ -305,11 +305,14 @@ async function loadPage() {
       let existing;
       try{existing=await KumoDuplicate.find(clip,KumoBridge,KumoStorage);}catch(error){setStatus('检查收藏状态失败，请检查本地资料库连接。','warning');saveEl.disabled=true;void revealQuick('无法检查收藏，请检查资料库连接','warning');return;}
       if(existing){
-        if(quickParam('quick')==='1'){setStatus('已经收藏，无需重复保存。','success');void finishQuick('已经收藏过');return;}
+        existingCapture=true;
+        const incomplete=existing.missingMedia||(existing.warnings||[]).some(code=>/^(?:media_download_pending|(?:images|videos)_not_fully_downloaded)/.test(code));
+        if(quickParam('quick')==='1'&&!incomplete){setStatus('已经收藏，无需重复保存。','success');void finishQuick('已经收藏过');return;}
         await KumoTags.select((existing.userTags||[]).map(tag=>tag.id));
         noteEl.value=existing.userNote||'';document.getElementById('note-count').textContent=noteEl.value.length;
-        completeSaved=true;saveEl.textContent='已收藏';saveEl.disabled=true;
-        setStatus('已经收藏，可修改笔记或标签。','success');return;
+        completeSaved=!incomplete;saveEl.textContent=incomplete?'重试媒体':'已收藏';saveEl.disabled=!incomplete;
+        setStatus(incomplete?'已收藏正文，可以重新保存缺失的媒体。':'已经收藏，可修改笔记或标签。',incomplete?'warning':'success');
+        if(!incomplete)return;
       }
     }
     const previousJob = [...(bridgeStatus?.activeJobs || [])].reverse().find(job => job.url === clip.url);
@@ -526,7 +529,20 @@ async function save() {
         {name: 'readable.html', content: KumoFormat.buildReadableHtml(coreClip), type: 'text/html;charset=utf-8'}
       ], coreClip);
     }
-    updateProgress(5, '核心内容已读取，正在处理图片', `共发现 ${clip.stats.images} 张图片`);
+    let savedCore=false;
+    if(!existingCapture&&directoryHandle&&locationModeEl.value!=='downloads'&&mediaTargets.length){
+      const core={...clip,comments:(clip.comments||[]).slice(0,Number(commentCountEl.value||0)),
+        targetAgent:profile.id,libraryPath:profile.libraryPath,warnings:[...clip.warnings,'media_download_pending']};
+      const result=await KumoStorage.writeClip(directoryHandle,profile,folderName,[
+        {name:'source.md',content:KumoFormat.buildMarkdown(core,note),type:'text/markdown;charset=utf-8'},
+        {name:'readable.html',content:KumoFormat.buildReadableHtml(core),type:'text/html;charset=utf-8'},
+        {name:'metadata.json',content:KumoFormat.buildMetadata(core,note),type:'application/json;charset=utf-8'}
+      ],core);
+      savedCore=!result.duplicate;
+      existingCapture=true;
+      KumoBridge.invalidateCache(true);
+    }
+    updateProgress(5, savedCore?'正文已保存，正在处理图片':'核心内容已读取，正在处理图片', `共发现 ${clip.stats.images} 张图片`);
     const preparedImages = useXJob ? {clip: {...clip, images: (clip.images || []).map(image => ({...image})), stats: {...clip.stats, downloadedImages: 0}}, files: []} : await prepareImageFiles(clip, progress => {
       const ratio = progress.total ? progress.completed / progress.total : 1;
       const bytes = progress.received ? ` · 已读取 ${formatBytes(progress.received)}${progress.expected ? ` / ${formatBytes(progress.expected)}` : ''}` : '';
@@ -618,6 +634,7 @@ async function save() {
     if (directoryHandle && locationModeEl.value!=='downloads') {
       updateProgress(90, '正在写入本地知识库', `${files.length} 个文件`);
       const result = await KumoStorage.writeClip(directoryHandle, profile, folderName, files, targetedClip);
+      existingCapture=true;
       const destination = profile.libraryPath === '.' ? `inbox/${folderName}` : `${profile.libraryPath}/inbox/${folderName}`;
       if (result.repaired) {
         setStatus(`${mediaOutcome.incomplete ? '已更新，媒体仍有缺失' : '已补全原有剪藏'}：${result.area}/${result.folderName}${mediaOutcome.detail ? `。${mediaOutcome.detail}` : ''}`, mediaOutcome.incomplete ? 'warning' : 'success');
@@ -652,7 +669,7 @@ async function save() {
 }
 
 async function loadTarget() {
-  const requestId=++targetEpoch;saveEl.disabled=true;completeSaved=false;
+  const requestId=++targetEpoch;saveEl.disabled=true;completeSaved=false;existingCapture=false;
   localStorage.setItem('kumo-target',targetEl.value);
   const connection=await KumoBridge.status();if(requestId!==targetEpoch)return;
   directoryHandle=await KumoStorage.getHandle('library');bridgeStatus=connection;needsDirectoryPermission=!!directoryHandle&&!await KumoStorage.ensurePermission(directoryHandle,{request:false});

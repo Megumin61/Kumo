@@ -1,5 +1,5 @@
 (function(scope) {
-  const validAsset = name => /^assets\/(?:image|frame)-\d{2}\.(?:jpg|jpeg|png|webp|gif|avif|img)$/i.test(name || '');
+  const validAsset = name => /^assets\/(?:image|frame)-\d{2,}\.(?:jpg|jpeg|png|webp|gif|avif|img)$/i.test(name || '');
   const contentKeywords = values => [...new Set((Array.isArray(values)?values:[]).filter(value=>typeof value==='string'&&value.trim()).map(value=>value.trim()))].slice(0,3);
   function platform(mark, name = '网页') {
     const value = String(name); const lower = value.toLowerCase();

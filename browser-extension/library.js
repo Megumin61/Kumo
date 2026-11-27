@@ -39,29 +39,75 @@ function resourceText(item) {
   const s = item.stats || {}; const images = Number(s.images || 0), videos = Number(s.videos || 0);
   return [images ? '图片 ' + images : '', videos ? '视频 ' + videos : ''].filter(Boolean).join('\n') || '文字';
 }
+let collapsedCollectionGroup='';
+function paintCollectionFilters(result){
+  const tree=byId('collection-tag-tree'),parents=byId('collection-filters'),children=byId('child-collection-filters');
+  tree.hidden=directory;
+  if(directory)return;
+  const activeGroup=collections.find(tag=>tag.id===filter)?.parentId||filter;
+  const related=activeGroup===collapsedCollectionGroup?[]:collections.filter(tag=>tag.parentId&&tag.parentId===activeGroup);
+  function render(container,tags){
+    const inBranch=container===children;
+    const entries=tags.map(tag=>({...tag,hasChildren:!inBranch&&Boolean(tag.id)&&collections.some(child=>child.parentId===tag.id)}));
+    const key=JSON.stringify(entries.map(({id,label,count,hasChildren})=>[id,label,count,hasChildren]));
+    if(container.dataset.entryKey!==key){
+      container.dataset.entryKey=key;
+      container.replaceChildren(...entries.map(({id,label,count,hasChildren},index)=>{
+        const button=el('button',label+(count!=null?' '+count:''),'chip');
+        button.title=label;button.type='button';button.dataset.collectionFilter=id;
+        if(hasChildren){
+          button.setAttribute('aria-controls',children.id);
+          const arrow=el('span','›','tag-tree-chevron');arrow.setAttribute('aria-hidden','true');button.append(arrow);
+        }
+        if(inBranch)button.style.animationDelay=Math.min(index,7)*25+'ms';
+        button.onclick=()=>{
+          remember();
+          collapsedCollectionGroup=hasChildren&&button.getAttribute('aria-expanded')==='true'?id:'';
+          filter=id;paintCollectionFilters(result);void load();
+        };
+        return button;
+      }));
+    }
+    Array.from(container.children).filter(button=>button!==children).forEach((button,index)=>{
+      const {id,hasChildren}=entries[index];
+      const inGroup=hasChildren&&activeGroup===id;
+      const open=inGroup&&related.length>0;
+      button.setAttribute('aria-pressed',String(filter===id||inGroup));
+      if(hasChildren)button.setAttribute('aria-expanded',String(open));
+    });
+  }
+  render(parents,[{id:'',label:'全部',count:result.allTotal},...collections.filter(tag=>!tag.parentId),{id:'__unclassified',label:'未分类',count:result.unclassifiedCount}]);
+  const wasHidden=children.hidden;
+  children.hidden=!related.length;
+  if(!related.length){if(children.parentElement!==tree)tree.append(children);return;}
+  const group=collections.find(tag=>tag.id===activeGroup);
+  const parent=Array.from(parents.children).find(button=>button.dataset.collectionFilter===activeGroup);
+  const changed=children.dataset.groupId!==activeGroup||children.previousElementSibling!==parent;
+  children.dataset.groupId=activeGroup;
+  children.setAttribute('aria-label',group.label+'子标签');
+  render(children,related);
+  if(changed)parent.after(children);
+  if(changed||wasHidden){
+    const viewport=parents.getBoundingClientRect(),left=parent.getBoundingClientRect().left,right=children.firstElementChild.getBoundingClientRect().right;
+    if(left<viewport.left||right>viewport.right)parents.scrollLeft+=left-viewport.left-2;
+  }
+}
 function paintNavigation(result) {
   collections = (result.collectionCounts || result.tags || []).filter(x => !x.hidden);
   document.body.classList.toggle('directory',directory); byId('brand-header').hidden=!directory;
   byId('view-title').textContent = directory ? '我的收藏' : filter ? collections.find(t => t.id === filter)?.label || '未分类' : '我的收藏';
   byId('collections-toggle').textContent = directory ? '全部收藏 ›' : '我的合集 ›';
-  const nextKey=JSON.stringify([directory,result.allTotal,result.unclassifiedCount,result.collectionCounts||result.tags,result.domains]);
-  document.querySelectorAll('#collection-filters [data-collection-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.collectionFilter===filter)));
-  byId('folders').hidden = !directory; byId('items').hidden = directory; byId('more').hidden = directory || offset >= result.total;
+  paintCollectionFilters(result);
+  const nextKey=JSON.stringify([directory,result.allTotal,result.unclassifiedCount,result.collectionCounts||result.tags,result.domains,result.tags]);
+  byId('folders').hidden=!directory;byId('items').hidden=directory;byId('more').hidden=directory||offset>=result.total;
   if(nextKey===navigationKey)return;navigationKey=nextKey;
-  byId('collection-filters').replaceChildren();
-  if (!directory) for (const c of [{id:'',label:'全部',count:result.allTotal}, ...collections, {id:'__unclassified',label:'未分类',count:result.unclassifiedCount}]) {
-    const b = el('button', c.label + (c.count != null ? ' ' + c.count : ''), 'chip'); b.title = c.label; b.type = 'button';b.dataset.collectionFilter=c.id;b.setAttribute('aria-pressed', String(filter === c.id));
-    b.onclick = () => { remember(); filter = c.id; void load(); };
-    if(c.id&&c.id!=='__unclassified'){const wrap=el('span','','tag-with-delete'),remove=el('button','×','tag-delete');remove.type='button';remove.setAttribute('aria-label','删除标签 '+c.label);remove.onclick=()=>deleteCollection(c);wrap.append(b,remove);byId('collection-filters').append(wrap);}else byId('collection-filters').append(b);
-  }
-  byId('folders').hidden = !directory; byId('items').hidden = directory; byId('more').hidden = directory || offset >= result.total;
   if (directory) {
     if(byId('folders').contains(byId('collection-form')))byId('folders').before(byId('collection-form'));
     byId('folders').replaceChildren();
     const all = el('button', '', 'folder all-folder'), allCover=el('span','','folder-cover'), allLabel=el('span','','folder-label'); allCover.append(KumoUI.icon('bookmark'));allLabel.append(el('strong','全部收藏'),el('span',result.total+' 条内容'));all.append(allCover,allLabel,KumoUI.icon('chevron'));
     all.onclick = () => { remember(); directory = false; filter = ''; void load(); }; byId('folders').append(all);
     const heading = el('div','','row folder-heading'); heading.append(el('h2','我的合集')); const add = el('button','+ 新合集','chip dashed'); add.onclick = () => { byId('collection-form').hidden = false; document.querySelector('#folders .folder-heading').after(byId('collection-form')); byId('collection-name').focus(); }; heading.append(add); byId('folders').append(heading);
-    for (const c of [...collections, {id:'__unclassified',label:'未分类',count:result.unclassifiedCount || 0,covers:result.unclassifiedCovers || []}]) {
+    for (const c of [...collections.filter(t=>!t.parentId), {id:'__unclassified',label:'未分类',count:result.unclassifiedCount || 0,covers:result.unclassifiedCovers || []}]) {
       const b = el('button','','folder'), cover = el('span','','folder-cover'), label = el('span','','folder-label');
       const candidates=[],seen=new Set();
       const addCover=(item,name)=>{const key=item.id+'/'+name;if(KumoUI.validAsset(name)&&!seen.has(key)){seen.add(key);candidates.push({item,name});}};
@@ -81,7 +127,17 @@ function paintNavigation(result) {
     const rename = el('button','改名','quiet'), hide = el('button',c.deletedAt ? '撤销删除' : c.hidden ? '恢复' : '删除','quiet');
     rename.onclick = async () => { try { await KumoBridge.updateTag({action:'rename',id:c.id,label:input.value}); await load(); } catch(e) { status(e.message); } };
     hide.onclick = async () => { if(!c.hidden)return deleteCollection(c);try { await KumoBridge.updateTag({action:'restore',id:c.id}); await load(); } catch(e) { status(e.message); } };
-    row.append(input,rename,hide); byId('manage-tags').append(row);
+    const hasChildren=(result.tags||[]).some(t=>t.parentId===c.id);
+    const parent=el('select');parent.setAttribute('aria-label',c.label+'的上级标签');
+    parent.append(new Option('一级标签',''),...collections.filter(t=>!t.parentId&&t.id!==c.id).map(t=>new Option(t.label,t.id)));
+    parent.value=c.parentId||'';parent.disabled=c.hidden||hasChildren;
+    parent.onchange=async()=>{
+      parent.disabled=true;
+      try{await KumoBridge.updateTag({action:'parent',id:c.id,parentId:parent.value});await load();}
+      catch(e){parent.value=c.parentId||'';byId('tag-settings-status').textContent=e.message;}
+      finally{parent.disabled=c.hidden||hasChildren;}
+    };
+    row.append(input,rename,hide,parent); byId('manage-tags').append(row);
   }
 }
 async function load(reset = true) {
@@ -103,7 +159,7 @@ async function load(reset = true) {
       const tagRow=el('span','','card-tags');for(const keyword of KumoUI.contentKeywords(item.contentKeywords))tagRow.append(el('span',keyword,'card-tag content-keyword'));tagRow.setAttribute('aria-label','AI 内容关键词');if(tagRow.children.length)body.append(tagRow);
       if(item.contentSummary)body.append(el('span','摘要 · '+item.contentSummary,'card-note content-summary'));
       if (item.userNote || !item.contentSummary&&item.excerpt) body.append(el('span',item.userNote || item.excerpt,'card-note'));
-      const incomplete = (item.warnings || []).some(x => /pending|incomplete|not_found|not_fully_downloaded|download_failed/.test(x));
+      const incomplete = item.missingMedia||(item.warnings || []).some(x => /^(?:media_download_pending|(?:images|videos)_not_fully_downloaded)/.test(x));
       if (incomplete) body.append(el('span','媒体待补全','cover-errors'));
       const resources=el('span','','resources');resources.title=resourceText(item).replaceAll('\n',' · ');resources.setAttribute('aria-label',resources.title);
       if(item.stats?.videos){const badge=el('span','','resource-badge');badge.append(KumoUI.icon('video'),el('span',String(item.stats.videos)));resources.append(badge);}
@@ -113,7 +169,7 @@ async function load(reset = true) {
     }
     byId('items').append(cards);
     offset += result.items.length; paintNavigation(result);
-    status(result.cachedOnly?'本地索引 · '+new Date(result.savedAt).toLocaleString():result.total?'':'暂无匹配内容');byId('library-status').title=result.cachedOnly?'当前展示上次保存在此浏览器中的收藏；在设置中恢复权限后可同步文件夹变化。':'';
+    status(result.cachedOnly?'本地索引 · '+new Date(result.savedAt).toLocaleString():result.warnings?.length?'有 '+result.warnings.length+' 个收藏目录缺少可读文件。':result.total?'':'暂无匹配内容');byId('library-status').title=result.cachedOnly?'当前展示上次保存在此浏览器中的收藏；在设置中恢复权限后可同步文件夹变化。':'';
     if (reset&&!document.body.classList.contains('reading')) window.scrollTo(0,positions.get(directory ? 'directory' : filter) || 0);
   } catch(e) { if(requestId!==epoch)return;disconnected=true;byId('connection-help').hidden=false;const first=e.code==='KUMO_NOT_CONFIGURED';byId('setup-title').textContent=first?'选择你的收藏位置':'暂时无法读取收藏';byId('setup-description').textContent=first?'首次选定文件夹后，Kumo 会记住位置，之后直接打开收藏。':e.message||'请在设置中检查资料库权限。';byId('retry-library').textContent=first?'开始使用':'打开设置';status(''); }
 }
@@ -149,7 +205,8 @@ async function show(id) {
     byId('compiled-summary').replaceChildren();
     byId('compiled-summary').append(el('h2','内容概括'),el('p',result.contentSummary||'尚未整理摘要；正文、评论和笔记可直接阅读。'));
     if(result.contentSummary){byId('compiled-summary').append(el('small',result.evidenceStatus==='index_only'?'AI 派生摘要 · 仅用于发现，不作为知识依据':'AI 派生摘要 · 请结合原件判断'));if(result.reuseWhen?.length)byId('compiled-summary').append(el('p','可参考：'+result.reuseWhen.slice(0,2).join('；')));}
-    collectionSelect.replaceChildren(new Option('未分类',''),...collections.map(c=>new Option(c.label,c.id))); collectionSelect.value = tags[0]?.id || '';
+    const labelFor=c=>[collections.find(t=>t.id===c.parentId)?.label,c.label].filter(Boolean).join(' / ');
+    collectionSelect.replaceChildren(new Option('未分类',''),...collections.map(c=>new Option(labelFor(c),c.id)));collectionSelect.value=tags[0]?.id||'';
     byId('collection-control').hidden=true;byId('change-collection').setAttribute('aria-expanded','false');
     const notes = (result.events || []).filter(e=>e.kind !== 'collection').map(e=>e.note).filter(note=>note !== ''); byId('note-history').textContent = notes.length ? notes.join('\n\n────────\n\n') : meta.userNote || '暂无笔记';
     byId('assets').replaceChildren(); const files = meta.files || {};
@@ -157,19 +214,52 @@ async function show(id) {
     byId('assets').classList.toggle('media-masonry',imageCount>1);
     byId('assets').style.columnCount=imageCount>1?String(Math.min(4,imageCount)):'';
     byId('media-caption').textContent=resourceText({stats:meta.stats}).replaceAll('\n',' · ')+(meta.stats?.characters?' · '+meta.stats.characters+' 字':'');
-    for (const name of [...(files.frames || []), ...(files.images || []), ...(files.videos || [])]) {
-      if (!KumoUI.validAsset(name) && !/^assets\/video-\d{2}\.(mp4|webm|mov|m4v)$/i.test(name)) continue;
-      const video = name.startsWith('assets/video-'), media = el(video?'video':'img');
-      if (video) { media.controls = true; media.preload = 'metadata'; const poster = KumoUI.preview({files}); if (poster) media.poster = KumoBridge.asset(id,poster); }
-      else { media.alt = '保存的媒体 ' + name; media.loading = 'lazy'; }
-      media.src = video ? await KumoBridge.assetURL(id,name) : KumoBridge.asset(id,name); if(requestId!==detailEpoch)return; media.onerror = () => { media.remove(); byId('detail-status').textContent = '该本地媒体读取失败，原帖链接仍可回溯。'; }; byId('assets').append(media);
-      if (video) byId('assets').append(el('p','本地视频 · ' + name.split('.').at(-1).toUpperCase()));
+    byId('detail-status').textContent='';byId('note-editor').hidden=true;byId('new-note').value='';
+    const retry=byId('repair-item-media');
+    retry.hidden=!(meta.stats?.videos||meta.stats?.images||files.videos?.length||files.images?.length);
+    retry.onclick=()=>repair(id,retry,byId('detail-status'));
+    if(byId('detail').hidden){detailReturnPosition=window.scrollY;byId('detail').hidden=false;document.body.classList.add('reading');detailView('body');window.scrollTo(0,0);}
+    byId('back').focus({preventScroll:true});
+    for(const name of [...(files.frames||[]),...(files.images||[]),...(files.videos||[])]){
+      const video=/^assets\/video-\d{2,}\.(?:mp4|webm|mov|m4v)$/i.test(name);
+      if(!video&&!KumoUI.validAsset(name))continue;
+      const media=el(video?'video':'img');
+      const unavailable=()=>{
+        if(requestId!==detailEpoch)return;
+        if(video)media.replaceWith(el('p','此视频文件目前缺失或无法播放。','cover-errors'));
+        else media.remove();
+        const message=byId('detail-status');
+        if(!message.textContent)message.textContent='部分附件不可用。正文、笔记与原文入口可以继续查看。';
+      };
+      media.onerror=unavailable;
+      if(video){
+        media.controls=true;media.preload='none';
+        const poster=KumoUI.preview({files});if(poster)media.poster=KumoBridge.asset(id,poster);
+        void KumoBridge.assetURL(id,name).then(url=>{if(requestId===detailEpoch)media.src=url;},unavailable);
+      }else{
+        media.alt='保存的媒体 '+name;media.loading='lazy';KumoBridge.bindAsset(media,id,name);
+      }
+      byId('assets').append(media);
     }
-    if (!files.videos?.length && meta.stats?.videos) byId('assets').append(el('p','视频尚未离线保存，请查看原帖或重新剪藏补全。','cover-errors'));
-    byId('detail-status').textContent = ''; byId('note-editor').hidden = true; byId('new-note').value = '';
-    if(byId('detail').hidden){detailReturnPosition=window.scrollY;byId('detail').hidden=false;document.body.classList.add('reading');detailView('body');window.scrollTo(0,0);}byId('back').focus({preventScroll:true});
+    if(!files.videos?.length&&meta.stats?.videos)byId('assets').append(el('p','视频尚未离线保存，可重试媒体或打开原文。','cover-errors'));
   } catch(e) { status('无法读取内容：' + e.message); }
 }
+let repairing=false;
+async function repair(id,button,message){
+  if(repairing)return;
+  repairing=true;button.disabled=true;
+  message.textContent='正在核对本地附件…';
+  try{
+    const stats=await KumoBridge.repairMedia(id,{onProgress:value=>{
+      message.textContent='已检查 '+value.processed+' / '+value.total+'，补齐 '+value.recovered+' 个附件。';
+    }});
+    await load();
+    if(id&&currentDetail?.id===id&&!byId('detail').hidden)await show(id);
+    message.textContent=stats.total?'已补齐 '+stats.recovered+' 个附件，另有 '+stats.remaining+' 个暂时无法恢复。'+(stats.blocked?'其中 '+stats.blocked+' 个未能通过浏览器跨站读取。':''):'此范围内没有待补齐的附件。';
+  }catch(error){message.textContent='未能补齐媒体：'+error.message;}
+  finally{repairing=false;button.disabled=false;}
+}
+byId('repair-library-media').onclick=()=>repair(null,byId('repair-library-media'),byId('repair-library-status'));
 byId('back').onclick = closeDetail;
 byId('settings').onclick=()=>{void locationSettings();byId('settings-dialog').showModal();};byId('settings-close').onclick=()=>byId('settings-dialog').close();byId('list-back').onclick=()=>{remember();directory=true;filter='';void load();};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!byId('detail').hidden&&!byId('settings-dialog').open)closeDetail();});

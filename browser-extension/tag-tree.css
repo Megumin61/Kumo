@@ -1,0 +1,72 @@
+.tag-tree {
+  --tag-green: var(--forest-moss, #526b43);
+  flex: 1;
+  min-width: 0;
+}
+#collection-tag-tree { margin-bottom: 12px; }
+#collection-tag-tree .tag-tree-parents { margin-bottom: 0; }
+.tag-tree[hidden], .tag-branch[hidden] { display: none; }
+
+.tag-tree .tag-tree-parents:has(> .tag-branch:not([hidden])) {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  padding-inline: 2px;
+}
+#tag-list.tag-tree-parents:has(> .tag-branch:not([hidden])) { max-height: none; }
+.tag-tree .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  white-space: nowrap;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 130ms ease;
+}
+.tag-tree .chip:active { transform: scale(.96); }
+.tag-tree .chip:focus-visible { outline: 2px solid var(--tag-green); outline-offset: 1px; }
+body .tag-tree-parents > .chip[aria-pressed="true"],
+body .tag-tree-parents > .tag-with-delete > .chip[aria-pressed="true"] {
+  border-color: var(--tag-green);
+  background: var(--tag-green);
+  color: #fff;
+}
+.tag-tree-chevron {
+  font-size: 1.35em;
+  line-height: .85;
+}
+.tag-branch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+.tag-branch > * {
+  flex: none;
+  animation: tag-child-enter 180ms cubic-bezier(.19,.8,.33,1) both;
+}
+body .tag-tree .tag-branch .chip {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tag-green) 10%, var(--forest-card, #fffcf3));
+  color: var(--forest-ink, #344b35);
+  font-size: 12px;
+  padding: 4px 8px;
+  min-height: 26px;
+}
+.tag-tree .tag-branch .chip[aria-pressed="true"] {
+  border-color: var(--forest-sage, #a7b48b);
+  background: color-mix(in srgb, var(--tag-green) 19%, var(--forest-card, #fffcf3));
+  color: var(--forest-ink, #344b35);
+}
+.tag-branch .chip[aria-pressed="true"] .tag-count { color: inherit; background: color-mix(in srgb, var(--tag-green) 10%, transparent); }
+@keyframes tag-child-enter {
+  from { opacity: 0; translate: -9px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-tree .chip { transition: none; }
+  .tag-tree .chip:active { transform: none; }
+  .tag-branch > * { animation: none; }
+}

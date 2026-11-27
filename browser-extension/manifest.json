@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kumo 网页剪藏",
-  "version": "0.19.2",
+  "version": "0.19.3",
   "description": "收藏网页和媒体到自己的资料文件夹，在本地 AI 中检索、使用并逐步沉淀知识。",
   "permissions": [
     "activeTab",
@@ -56,5 +56,5 @@
     },
     "default_popup": "popup.html"
   },
-  "version_name": "0.19.2 · 视频与字幕保存"
+  "version_name": "0.19.3 · 收藏标签与媒体补全"
 }

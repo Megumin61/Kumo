@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Kumo 网页剪藏</title>
   <link rel="stylesheet" href="common.css"><link rel="stylesheet" href="popup.css"><link rel="stylesheet" href="popup-refinements.css"><link rel="stylesheet" href="logo.css">
-<link rel="stylesheet" href="forest-journal.css"></head>
+<link rel="stylesheet" href="forest-journal.css"><link rel="stylesheet" href="tag-tree.css"></head>
 <body>
   <main>
     <header>
@@ -29,7 +29,13 @@
 
     <section aria-label="用户标签">
       <div class="label-row"><label class="note-label">选择标签</label></div>
-      <div class="tag-row"><div id="tag-list"></div><button id="add-tag" class="tag-add chip dashed" type="button">+ 新标签</button><form id="tag-form" class="tag-add chip dashed" hidden><input id="tag-input" maxlength="40" aria-label="新标签" placeholder="标签名称" autocomplete="off"></form></div>
+      <div class="tag-row">
+        <div class="tag-tree">
+          <div id="tag-list" class="tag-tree-parents"></div>
+          <div id="child-tag-list" class="tag-branch" aria-label="子标签" hidden></div>
+        </div>
+        <button id="add-tag" class="tag-add chip dashed" type="button">+ 新标签</button><form id="tag-form" class="tag-add chip dashed" hidden><input id="tag-input" maxlength="40" aria-label="新标签" placeholder="标签名称" autocomplete="off"></form>
+      </div>
     </section>
     <section id="video-focus" hidden>
       <label class="target-label" for="video-intent">视频参考</label>

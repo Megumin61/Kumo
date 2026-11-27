@@ -40,3 +40,8 @@ body.reading main>:not(#detail):not(#settings-dialog){display:none!important}
 .card:focus-visible,.source-icon:focus-visible,.detail-title-link:focus-visible{outline:2px solid #647c4d;outline-offset:3px}
 
 .library-onboarding{padding:24px;margin:20px 0;background:#faf8ed;border:1px solid #dce3ce;border-radius:16px}.library-onboarding h2{font-size:19px}.library-onboarding p,.library-location-settings p{font-size:13px;line-height:1.8;color:#748068}.library-location-settings{padding:14px 0;border-bottom:1px solid #e2e4d8;margin-bottom:12px}.library-location-settings summary{cursor:pointer}#library-status:empty{display:none}
+
+.manage-row select {
+  grid-column: 1 / -1;
+  max-width: 100%;
+}

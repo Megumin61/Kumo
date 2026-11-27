@@ -215,8 +215,32 @@
       if(merged.accessUrl&&incomingFile){const metadata=JSON.parse(typeof incomingFile.content==='string'?incomingFile.content:await incomingFile.content.text());incomingFile.content=JSON.stringify({...metadata,accessUrl:merged.accessUrl},null,2);}
       for(const file of files)if(['source.md','readable.html'].includes(file.name))file.content=KumoSourceLinks.rewriteGeneratedLinks(file.name,typeof file.content==='string'?file.content:await file.content.text(),merged);
       clip=merged;
+      const area = await library.getDirectoryHandle(existing.area);
+      const directory = await area.getDirectoryHandle(existing.folderName);
+      const sameResource=(a,b)=>{
+        try{const old=new URL(a),next=new URL(b);return old.origin===next.origin&&old.pathname===next.pathname;}
+        catch{return false;}
+      };
+      let restored=false;
+      for(const kind of ['images','videos']){
+        const media=Array.isArray(previous[kind])?previous[kind]:[];
+        for(const original of media){
+          if(!original?.localFile||!/^assets\/(?:image|video)-\d{2,}\.(?:jpg|jpeg|png|webp|gif|avif|img|mp4|webm|mov|m4v)$/i.test(original.localFile))continue;
+          const replacement=(clip[kind]||[]).find(v=>v.localFile===original.localFile&&sameResource(original.url,v.url));
+          if(!replacement)continue;
+          const asset=files.find(f=>f.name===replacement.localFile);
+          if(!asset)continue;
+          const assets=await ensureDirectory(directory,['assets']);
+          try{await assets.getFileHandle(asset.name.split('/').at(-1));}
+          catch(error){
+            if(error.name!=='NotFoundError')throw error;
+            await writeFile(directory,asset.name,asset.content,asset.type);restored=true;
+          }
+        }
+      }
       const incomingStats = clip.stats || {};
       const previousStats = previous.stats || {};
+      const finalizePending=(previous.warnings||[]).includes('media_download_pending')&&!(clip.warnings||[]).includes('media_download_pending');
       const losesSavedMedia = ['downloadedImages', 'downloadedVideos'].some(key => Number(incomingStats[key] || 0) < Number(previousStats[key] || 0));
       const gainsMedia = ['images', 'downloadedImages', 'videos', 'downloadedVideos', 'foundGalleryMedia'].some(key => Number(incomingStats[key] || 0) > Number(previousStats[key] || 0));
       const parts = value => String(value || '0').split('.').map(part => Number(part) || 0);
@@ -229,10 +253,13 @@
           break;
         }
       }
-      if (losesSavedMedia || (!gainsMedia && !newerExtractor)) return {duplicate: true, linksUpdated:newAccess, ...existing};
-      const area = await library.getDirectoryHandle(existing.area);
-      const directory = await area.getDirectoryHandle(existing.folderName);
-      for (const file of files) await writeFile(directory, file.name, file.content, file.type);
+      if(losesSavedMedia||(!gainsMedia&&!newerExtractor&&!finalizePending))return {duplicate:!restored,repaired:restored,linksUpdated:newAccess,...existing};
+      if(incomingFile&&previous.capturedAt){
+        const next=JSON.parse(typeof incomingFile.content==='string'?incomingFile.content:await incomingFile.content.text());
+        incomingFile.content=JSON.stringify({...next,capturedAt:previous.capturedAt},null,2);
+      }
+      for(const file of files.filter(file=>file.name!=='metadata.json'))await writeFile(directory,file.name,file.content,file.type);
+      if(incomingFile)await writeFile(directory,incomingFile.name,incomingFile.content,incomingFile.type);
       return {duplicate: false, repaired: true, ...existing};
     }
     const inbox = await library.getDirectoryHandle('inbox', {create: true});

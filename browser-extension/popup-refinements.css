@@ -31,7 +31,7 @@ main>section[aria-label="用户标签"]{flex:none}
 .chip[aria-pressed=true] .tag-count{background:#ffffff25;color:white}
 .label-row .note-label{margin-right:auto}
 .label-row .note-label{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
-@media(max-height:540px){.tag-row>#tag-list:not(.expanded){max-height:32px}}
+@media(max-height:540px){.tag-row #tag-list:not(.expanded){max-height:32px}}
 .media-kind{position:absolute;right:18px;top:94px;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:#30342bc9;color:white;font-size:9px;pointer-events:none}
 @media(max-height:540px){.media-kind{top:87px}}
 body:has(#progress-panel:not([hidden])) main{gap:5px}

@@ -3,13 +3,18 @@
  let cached=null,pending=null,rootOverride=null,generation=0,forceScan=false;
  const assets=new Map(),loading=new Map();
  const array=v=>Array.isArray(v)?v:[];
+ const captureTime=value=>Date.parse(value)||0;
+ const orderCaptures=(rows)=>rows.sort((a,b)=>captureTime(b.meta.capturedAt)-captureTime(a.meta.capturedAt)||a.id.localeCompare(b.id));
+ const orderTags=tags=>[...tags].sort((a,b)=>captureTime(b.latestCapturedAt)-captureTime(a.latestCapturedAt));
  const digest=async value=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(n=>n.toString(16).padStart(2,'0')).join('');
  function parts(relative){const p=String(relative).split('/');if(!p.length||p.some(v=>!v||v==='.'||v==='..'||/[\\:*?"<>|]/.test(v)))throw Error('无效资料路径');return p;}
  async function directory(root,path,create=false){let d=root;for(const p of parts(path))d=await d.getDirectoryHandle(p,{create});return d;}
- async function file(root,path){const p=parts(path),name=p.pop();return (await (p.length?await directory(root,p.join('/')):root).getFileHandle(name)).getFile();}
+ async function fileHandle(root,path){const p=parts(path),name=p.pop();return (p.length?await directory(root,p.join('/')):root).getFileHandle(name);}
+ async function file(root,path){return (await fileHandle(root,path)).getFile();}
+ async function exists(root,path){try{await fileHandle(root,path);return true;}catch(e){if(e.name==='NotFoundError')return false;throw e;}}
  async function read(root,path,optional=false){try{return await (await file(root,path)).text();}catch(e){if(optional&&e.name==='NotFoundError')return null;throw e;}}
  async function json(root,path,optional=false){const text=await read(root,path,optional);return text===null?null:JSON.parse(text.replace(/^\uFEFF/,''));}
- async function write(root,path,value){if(!await scope.KumoStorage.ensurePermission(root,{request:false}))throw Error('需要恢复写入授权，请打开资料库连接页；不用重新选择原文件夹。');const p=parts(path),name=p.pop(),d=p.length?await directory(root,p.join('/'),true):root,h=await d.getFileHandle(name,{create:true}),w=await h.createWritable();try{await w.write(typeof value==='string'?value:JSON.stringify(value,null,2));await w.close();}catch(e){await w.abort().catch(()=>{});throw e;}}
+ async function write(root,path,value){if(!await scope.KumoStorage.ensurePermission(root,{request:false}))throw Error('需要恢复写入授权，请打开资料库连接页；不用重新选择原文件夹。');const p=parts(path),name=p.pop(),d=p.length?await directory(root,p.join('/'),true):root,h=await d.getFileHandle(name,{create:true}),w=await h.createWritable();try{await w.write(typeof value==='string'||value instanceof Blob?value:JSON.stringify(value,null,2));await w.close();}catch(e){await w.abort().catch(()=>{});throw e;}}
  async function root(){const h=rootOverride||await scope.KumoStorage.getHandle('library');if(!h)throw Error('请先选择原资料文件夹');if(await h.queryPermission({mode:'read'})!=='granted')throw Error('资料文件夹需要重新授权，请点击重新授权');return h;}
  function invalidateCache(broadcast=false){for(const url of assets.values())URL.revokeObjectURL(url);assets.clear();loading.clear();cached=null;forceScan=true;generation++;if(broadcast)localStorage.setItem('kumo-directory-revision',Date.now()+'-'+Math.random());}
  scope.addEventListener?.('storage',event=>{if(event.key==='kumo-directory-revision')invalidateCache();if(event.key==='kumo-library-cache-revision'){cached=null;forceScan=false;generation++;scope.dispatchEvent?.(new CustomEvent('kumo:library-updated'));}});
@@ -24,20 +29,20 @@
 
 
  const revision=()=>localStorage.getItem?.('kumo-directory-revision')||'';
- const hydrate=entry=>({...entry,byId:new Map(entry.rows.map(r=>[r.id,r]))});
- const signature=s=>JSON.stringify([s.rows.map(r=>[r.id,r.fingerprint]),s.tags,s.wiki]);
+ const hydrate=entry=>({...entry,rows:orderCaptures(entry.rows),byId:new Map(entry.rows.map(r=>[r.id,r]))});
+ const signature=s=>JSON.stringify([s.rows.map(r=>[r.id,r.fingerprint,r.item.missingMedia]),s.tags,s.wiki]);
  async function status(){try{const h=rootOverride||await scope.KumoStorage.getHandle('library');if(!h)return null;const read=await h.queryPermission({mode:'read'}),write=await h.queryPermission({mode:'readwrite'});if(read!=='granted'&&(read==='denied'||!await scope.KumoStorage.getLibraryCache?.(h)))return null;return {ok:true,service:'kumo-directory',apiVersion:0,transport:'filesystem',libraryRoot:h.name,cachedOnly:read!=='granted',capabilities:['library_browser',...(write==='granted'?['directory_write']:[])]};}catch{return null;}}
  async function scan(h,version){const rows=[],warnings=[];
   const wiki=await json(h,'wiki/kumo/state.json',true)||{revision:0,domains:[],topics:[],cards:[],relations:[]},registry=await json(h,'tags.json',true)||{tags:[]};if(!Array.isArray(registry.tags))throw Error('标签文件格式异常，未覆盖原文件');
   for(const area of ['inbox','archive']){let d;try{d=await directory(h,area);}catch(e){if(e.name==='NotFoundError')continue;throw e;}const entries=[];for await(const e of d.values())if(e.kind==='directory')entries.push(e);
-   let next=0;await Promise.all(Array.from({length:Math.min(8,entries.length)},async()=>{while(next<entries.length){const e=entries[next++],relative=area+'/'+e.name;try{const meta=await json(h,relative+'/metadata.json'),source=await read(h,relative+'/source.md'),id=(await digest(relative)).slice(0,24),ledger=await json(h,'annotations/'+id+'.json',true),events=array(ledger?.events),fingerprint=await digest(source+'\n'+JSON.stringify(meta)+'\n'+JSON.stringify(events));rows.push({id,relative,meta,source,events,fingerprint});}catch(error){warnings.push({path:relative,error:error.message});}}}));
+   let next=0;await Promise.all(Array.from({length:Math.min(8,entries.length)},async()=>{while(next<entries.length){const e=entries[next++],relative=area+'/'+e.name;try{const meta=await json(h,relative+'/metadata.json'),source=await read(h,relative+'/source.md'),id=(await digest(relative)).slice(0,24),ledger=await json(h,'annotations/'+id+'.json',true),events=array(ledger?.events),fingerprint=await digest(source+'\n'+JSON.stringify(meta)+'\n'+JSON.stringify(events));const missingMedia=await missingMediaCount(e,meta);rows.push({id,relative,meta,source,events,fingerprint,missingMedia});}catch(error){warnings.push({path:relative,error:error.message});}}}));
   }
-  rows.sort((a,b)=>String(b.meta.capturedAt).localeCompare(String(a.meta.capturedAt))||a.id.localeCompare(b.id));
+  orderCaptures(rows);
   const tags=registry.tags.map(t=>({...t}));for(const r of rows)for(const t of r.events.at(-1)?.userTags??r.meta.userTags??[])if(!tags.some(v=>v.id===t.id))tags.push({...t,recovered:true});
   const cards=new Map(array(wiki.cards).map(c=>[c.id,c]));
   for(const r of rows){const c=cards.get(r.id);r.fresh=c?.fingerprint===r.fingerprint;if(r.fresh&&c.mediaFingerprint){const m=await json(h,'derived/media/'+r.id+'/manifest.json',true);r.fresh=m?.fingerprint===c.mediaFingerprint&&m.sourceFingerprint===r.fingerprint;}
    const userTags=array(r.events.at(-1)?.userTags??r.meta.userTags).filter(t=>!tags.find(v=>v.id===t.id)?.deletedAt).map(t=>({id:t.id,label:tags.find(v=>v.id===t.id)?.label||t.label}));
-   const latestNote=[...r.events].reverse().find(e=>e.kind!=='collection');r.item={id:r.id,relativePath:r.relative,title:r.meta.title,url:r.meta.accessUrl||r.meta.url,platform:r.meta.platform,author:r.meta.author||'',authorUrl:r.meta.authorUrl||'',capturedAt:r.meta.capturedAt,userTags,userNote:latestNote?.note??r.meta.userNote??'',files:r.meta.files||{},stats:r.meta.stats||{},warnings:r.meta.warnings||[],excerpt:r.meta.excerpt||'',contentSummary:r.fresh?c.summary:'',contentKeywords:r.fresh?array(c.keywords):[],evidenceStatus:r.fresh?c.evidenceStatus||'limited':'uncompiled'};
+   const latestNote=[...r.events].reverse().find(e=>e.kind!=='collection');r.item={id:r.id,relativePath:r.relative,title:r.meta.title,url:r.meta.accessUrl||r.meta.url,platform:r.meta.platform,author:r.meta.author||'',authorUrl:r.meta.authorUrl||'',capturedAt:r.meta.capturedAt,userTags,userNote:latestNote?.note??r.meta.userNote??'',files:r.meta.files||{},stats:r.meta.stats||{},missingMedia:r.missingMedia,warnings:r.meta.warnings||[],excerpt:r.meta.excerpt||'',contentSummary:r.fresh?c.summary:'',contentKeywords:r.fresh?array(c.keywords):[],evidenceStatus:r.fresh?c.evidenceStatus||'limited':'uncompiled'};
   }
 
   const result={root:h,rows,wiki,tags,warnings,savedAt:Date.now(),revision:revision(),cachedOnly:false,byId:new Map(rows.map(r=>[r.id,r]))};
@@ -58,15 +63,152 @@
   if(permission!=='granted'){const e=Error('请在设置中恢复资料库访问；原位置已记住，无需重选。');e.code='KUMO_NEEDS_ACCESS';throw e;}
   return startScan(h);
  }
- function overview(s){const items=s.rows.map(r=>r.item),covers=values=>values.filter(v=>array(v.files.images).length||array(v.files.frames).length).slice(0,4);return {collectionCounts:s.tags.map(t=>({...t,count:items.filter(v=>v.userTags.some(x=>x.id===t.id)).length,covers:covers(items.filter(v=>v.userTags.some(x=>x.id===t.id)))})),unclassifiedCount:items.filter(v=>!v.userTags.length).length,unclassifiedCovers:covers(items.filter(v=>!v.userTags.length))};}
- async function library({q='',tag='',domain='',offset=0,limit=100}={},options={}){if(options.fresh)invalidateCache();const s=await snapshot();let items=s.rows.map(r=>r.item);if(q)items=items.filter(v=>[v.title,v.userNote,...v.contentKeywords,...v.userTags.map(t=>t.label)].join(' ').toLowerCase().includes(q.toLowerCase()));if(tag)items=items.filter(v=>tag==='__unclassified'?!v.userTags.length:v.userTags.some(t=>t.id===tag));if(domain)items=items.filter(v=>s.wiki.cards.find(c=>c.id===v.id)?.domainIds.includes(domain));return {ok:true,cachedOnly:s.cachedOnly,savedAt:s.savedAt,items:items.slice(+offset,+offset+Math.min(200,+limit)),total:items.length,allTotal:s.rows.length,...overview(s),tags:s.tags,domains:s.wiki.domains||[],warnings:s.warnings};}
- async function tags(options={}){if(options.fresh)invalidateCache();const s=await snapshot();return {tags:overview(s).collectionCounts,unclassifiedCount:overview(s).unclassifiedCount,total:s.rows.length};}
+ function parentId(tags,tag){
+  const parent=tags.find(t=>t.id===tag.parentId&&!t.hidden&&!t.deletedAt);
+  return parent&&parent.id!==tag.id&&!parent.parentId?parent.id:'';
+ }
+ function overview(s){
+  const items=s.rows.map(r=>r.item),covers=values=>values.filter(v=>array(v.files.images).length||array(v.files.frames).length).slice(0,4);
+  const visible=s.tags.filter(t=>!t.hidden&&!t.deletedAt),groups=new Map(visible.map(t=>[t.id,[]])),unclassified=[];
+  const parents=new Map(visible.map(t=>[t.id,parentId(visible,t)]));
+  for(const item of items){
+   const memberships=new Set();
+   for(const t of item.userTags){memberships.add(t.id);if(parents.get(t.id))memberships.add(parents.get(t.id));}
+   if(!memberships.size)unclassified.push(item);
+   for(const id of memberships)groups.get(id)?.push(item);
+  }
+  const collectionCounts=orderTags(visible.map(t=>{
+   const matches=groups.get(t.id);
+   return {...t,parentId:parents.get(t.id),count:matches.length,latestCapturedAt:matches[0]?.capturedAt||'',covers:covers(matches)};
+  }));
+  return {collectionCounts,unclassifiedCount:unclassified.length,unclassifiedCovers:covers(unclassified),unclassifiedLatestCapturedAt:unclassified[0]?.capturedAt||''};
+ }
+ async function library({q='',tag='',domain='',offset=0,limit=100}={},options={}){
+  if(options.fresh)invalidateCache();
+  const s=await snapshot(),collections=overview(s);
+  let items=s.rows.map(r=>r.item);
+  if(q)items=items.filter(v=>[v.title,v.userNote,...v.contentKeywords,...v.userTags.map(t=>t.label)].join(' ').toLowerCase().includes(q.toLowerCase()));
+  if(tag){
+   const ids=new Set([tag,...collections.collectionCounts.filter(t=>t.parentId===tag).map(t=>t.id)]);
+   items=items.filter(v=>tag==='__unclassified'?!v.userTags.length:v.userTags.some(t=>ids.has(t.id)));
+  }
+  if(domain)items=items.filter(v=>array(s.wiki.cards.find(c=>c.id===v.id)?.domainIds).includes(domain));
+  return {ok:true,cachedOnly:s.cachedOnly,savedAt:s.savedAt,items:items.slice(+offset,+offset+Math.min(200,+limit)),total:items.length,allTotal:s.rows.length,...collections,tags:s.tags,domains:s.wiki.domains||[],warnings:s.warnings};
+ }
+ async function tags(options={}){if(options.fresh)invalidateCache();const s=await snapshot(),o=overview(s);return {tags:o.collectionCounts.map(({covers,...tag})=>tag),unclassifiedCount:o.unclassifiedCount,total:s.rows.length};}
  async function item(id){const s=await snapshot(),r=s.byId.get(id);if(!r)throw Error('未找到收藏');return {ok:true,id,relativePath:r.relative,metadata:r.meta,events:r.events,source:r.source,effectiveUserTags:r.item.userTags,...r.item};}
- async function lookup(clip){const s=await snapshot(),key=clip.dedupeKey||scope.KumoStorage.sourceKeyFromUrl(clip.url);return {ok:true,item:s.rows.find(r=>key&&(r.meta.dedupeKey||scope.KumoStorage.sourceKeyFromUrl(r.meta.url))===key||clip.url&&r.meta.url===clip.url)?.item||null};}
- async function updateTag(input){const h=await root(),data=await json(h,'tags.json',true)||{schema:'kumo-tags-v1',tags:[]};if(!Array.isArray(data.tags))throw Error('标签文件格式异常');const label=String(input.label||'').trim();if(['add','rename'].includes(input.action)&&(!label||label.length>40||/[\x00-\x1f]/.test(label)))throw Error('无效合集名称');let t=data.tags.find(t=>t.id===input.id);if(input.action==='add'){t=data.tags.find(t=>t.label===label&&!t.hidden);if(!t){t={id:crypto.randomUUID(),label,hidden:false};data.tags.push(t);}}else{if(!t)throw Error('合集不存在');if(input.action==='rename'){if(data.tags.some(v=>v.id!==t.id&&v.label===label&&!v.hidden))throw Error('合集名称已存在');t.label=label;}else if(['hide','delete','restore'].includes(input.action)){t.hidden=input.action!=='restore';if(input.action==='delete')t.deletedAt=new Date().toISOString();if(input.action==='restore')delete t.deletedAt;}else throw Error('无效合集操作');}await write(h,'tags.json',data);invalidateCache(true);return t;}
+ async function lookup(clip){
+  const s=await snapshot(),key=clip.dedupeKey||scope.KumoStorage.sourceKeyFromUrl(clip.url);
+  const r=s.rows.find(r=>key&&(r.meta.dedupeKey||scope.KumoStorage.sourceKeyFromUrl(r.meta.url))===key||clip.url&&r.meta.url===clip.url);
+  if(!r)return {ok:true,item:null};
+  const listed=[...array(r.meta.files?.images),...array(r.meta.files?.videos)].filter(validMediaPath);
+  const missingMedia=!s.cachedOnly&&(await Promise.all(listed.map(name=>exists(s.root,r.relative+'/'+name)))).includes(false);
+  return {ok:true,item:{...r.item,missingMedia}};
+ }
+ async function updateTag(input){
+  const edit=async()=>{
+   const h=await root(),data=await json(h,'tags.json',true)||{schema:'kumo-tags-v1',tags:[]};
+   if(!Array.isArray(data.tags))throw Error('标签文件格式异常');
+   const label=String(input.label||'').trim();
+   if(['add','rename'].includes(input.action)&&(!label||label.length>40||/[\x00-\x1f]/.test(label)))throw Error('无效合集名称');
+   let t=data.tags.find(t=>t.id===input.id);
+   if(input.action==='add'){
+    t=data.tags.find(t=>t.label===label&&!t.hidden);
+    if(!t){t={id:crypto.randomUUID(),label,hidden:false};data.tags.push(t);}
+   }else{
+    if(!t)throw Error('合集不存在');
+    if(input.action==='rename'){
+     if(data.tags.some(v=>v.id!==t.id&&v.label===label&&!v.hidden))throw Error('合集名称已存在');
+     t.label=label;
+    }else if(input.action==='parent'){
+     const parent=data.tags.find(v=>v.id===input.parentId&&!v.hidden&&!v.deletedAt);
+     if(input.parentId&&(!parent||parent.id===t.id||parent.parentId||data.tags.some(v=>v.parentId===t.id)))throw Error('请选择另一个一级标签；已有子标签的分组不能移入子层。');
+     if(parent)t.parentId=parent.id;else delete t.parentId;
+    }else if(['hide','delete','restore'].includes(input.action)){
+     t.hidden=input.action!=='restore';
+     if(input.action==='delete')t.deletedAt=new Date().toISOString();
+     if(input.action==='restore')delete t.deletedAt;
+    }else throw Error('无效合集操作');
+   }
+   await write(h,'tags.json',data);invalidateCache(true);return t;
+  };
+  return scope.navigator?.locks?.request('kumo-tags',edit)??edit();
+ }
  async function annotate(clip,note,userTags,kind='note'){const s=await snapshot(),found=s.byId.get(clip.id)||s.rows.find(r=>(clip.dedupeKey&&r.meta.dedupeKey===clip.dedupeKey)||(clip.url&&r.meta.url===clip.url));if(!found)throw Error('未找到原收藏');const path='annotations/'+found.id+'.json',data=await json(s.root,path,true)||{schema:'kumo-annotations-v1',relativePath:found.relative,events:[]};if(!data.events.length&&typeof found.meta.userNote==='string')data.events.push({id:crypto.randomUUID(),capturedAt:found.meta.capturedAt,kind:'note',note:found.meta.userNote,userTags:found.meta.userTags||[]});data.events.push({id:crypto.randomUUID(),capturedAt:new Date().toISOString(),kind,note:String(note??''),userTags:userTags??found.item.userTags});await write(s.root,path,data);invalidateCache(true);return {saved:true,relativePath:found.relative};}
  async function setCollection(clip,id){const s=await snapshot(),tag=s.tags.find(t=>t.id===id&&!t.deletedAt);if(id&&!tag)throw Error('合集不存在');return annotate(clip,'',tag?[{id:tag.id,label:tag.label}]:[],'collection');}
- async function assetBlob(id,name){if(!/^(?:assets\/(?:image|frame)-\d{2}\.(?:jpg|jpeg|png|webp|gif|avif|img)|assets\/video-\d{2}\.(?:mp4|webm|mov|m4v)|viewport.png)$/.test(name))throw Error('无效媒体路径');const s=await snapshot(),r=s.byId.get(id);if(!r||![...array(r.meta.files?.images),...array(r.meta.files?.frames),...array(r.meta.files?.videos),r.meta.files?.screenshot].includes(name))throw Error('媒体不在清单中');const key=id+'/'+name;let saved;try{saved=await scope.KumoStorage.getCachedAsset?.(s.root,key,r.fingerprint);}catch{}if(saved)return saved;if(s.cachedOnly)throw Error('此媒体尚未保存在本地预览中，请在设置中恢复同步后读取。');const blob=await file(s.root,r.relative+'/'+name);void scope.KumoStorage.saveCachedAsset?.(s.root,key,r.fingerprint,blob)?.catch(()=>{});return blob;}
+ const validMediaPath=name=>/^(?:assets\/(?:image|frame)-\d{2,}\.(?:jpg|jpeg|png|webp|gif|avif|img)|assets\/video-\d{2,}\.(?:mp4|webm|mov|m4v)|viewport\.png)$/i.test(name);
+ async function missingMediaCount(clip,meta){
+  const listed=new Set([...array(meta.files?.images),...array(meta.files?.videos)].filter(validMediaPath));
+  if(!listed.size)return 0;
+  const found=await Promise.all([...listed].map(name=>exists(clip,name)));
+  return found.filter(present=>!present).length;
+ }
+ async function mediaCandidates(s,r){
+  const candidates=[];
+  for(const kind of ['videos','images']){
+   for(const [index,entry] of array(r.meta[kind]).entries()){
+    if(!entry?.url||entry.downloadStatus==='reference_only')continue;
+    if(entry.localFile&&(!validMediaPath(entry.localFile)||await exists(s.root,r.relative+'/'+entry.localFile)))continue;
+    candidates.push({kind,index,entry});
+   }
+  }
+  return candidates;
+ }
+ async function repairMedia(id,{onProgress}={}){
+  const h=await root();
+  if(!await scope.KumoStorage.ensurePermission(h,{request:false}))throw Error('请先在收藏设置中恢复写入授权。');
+  invalidateCache();
+  const s=await snapshot(),rows=id?[s.byId.get(id)].filter(Boolean):s.rows;
+  const stats={total:0,processed:0,recovered:0,remaining:0,blocked:0};
+  const queue=[];
+  for(const r of rows){
+   const candidates=await mediaCandidates(s,r);
+   if(candidates.length){queue.push({r,candidates});stats.total+=candidates.length;}
+  }
+  onProgress?.({...stats});
+  let next=0;
+  async function worker(){
+   while(next<queue.length){
+    const {r,candidates}=queue[next++];
+    const repair=async()=>{
+     for(const {kind,index,entry} of candidates){
+      try{
+       const {blob,extension}=await scope.KumoMediaRepair.restore(r.meta,kind,entry);
+       const meta=await json(h,r.relative+'/metadata.json');
+       const media=meta[kind]?.[index];
+       if(!media||media.url!==entry.url||media.localFile!==entry.localFile)throw Error('capture_changed');
+       const stem='assets/'+(kind==='images'?'image':'video')+'-'+String(index+1).padStart(2,'0');
+       const original=media.localFile;
+       const expected=original?.split('.').at(-1)?.toLowerCase();
+       const compatible=expected===extension||expected==='jpeg'&&extension==='jpg';
+       const name=compatible?original:stem+'.'+extension;
+       if(await exists(h,r.relative+'/'+name)){if(!compatible)throw Error('file_conflict');}
+       else await write(h,r.relative+'/'+name,blob);
+       if(!compatible){
+        const files=array(meta.files?.[kind]).map(value=>value===original?name:value);
+        meta.files={...meta.files,[kind]:[...new Set([...files,name])]};
+        meta[kind][index]={...media,localFile:name,downloadStatus:'saved',downloadError:undefined,bytes:blob.size};
+        const key=kind==='images'?'downloadedImages':'downloadedVideos';
+        const saved=meta[kind].filter(value=>value?.localFile).length;
+        meta.stats={...meta.stats,[key]:saved};
+        const prefix=kind+'_not_fully_downloaded:';
+        meta.warnings=array(meta.warnings).filter(value=>!String(value).startsWith(prefix));
+        if(saved<meta[kind].length)meta.warnings.push(prefix+saved+'/'+meta[kind].length);
+        await write(h,r.relative+'/metadata.json',meta);
+       }
+       stats.recovered++;
+      }catch(error){stats.remaining++;if(error.message==='browser_blocked')stats.blocked++;}
+      stats.processed++;onProgress?.({...stats});
+     }
+    };
+    if(scope.navigator?.locks)await scope.navigator.locks.request('kumo-repair:'+r.id,repair);else await repair();
+   }
+  }
+  await Promise.all(Array.from({length:Math.min(4,queue.length)},worker));
+  invalidateCache(true);
+  return stats;
+ }
+ async function assetBlob(id,name){if(!validMediaPath(name))throw Error('无效媒体路径');const s=await snapshot(),r=s.byId.get(id);if(!r||![...array(r.meta.files?.images),...array(r.meta.files?.frames),...array(r.meta.files?.videos),r.meta.files?.screenshot].includes(name))throw Error('媒体不在清单中');const key=id+'/'+name;let saved;try{saved=await scope.KumoStorage.getCachedAsset?.(s.root,key,r.fingerprint);}catch{}if(saved)return saved;if(s.cachedOnly)throw Error('此媒体尚未保存在本地预览中，请在设置中恢复同步后读取。');let blob;try{blob=await file(s.root,r.relative+'/'+name);}catch(e){if(e.name==='NotFoundError')throw Object.assign(Error('本地附件缺失'),{code:'KUMO_MEDIA_MISSING'});throw e;}void scope.KumoStorage.saveCachedAsset?.(s.root,key,r.fingerprint,blob)?.catch(()=>{});return blob;}
  async function assetURL(id,name){const key=id+'/'+name;if(assets.has(key))return assets.get(key);if(loading.has(key)){const result=await loading.get(key);if(result)return result;}const version=generation,url=URL.createObjectURL(await assetBlob(id,name));if(version!==generation){URL.revokeObjectURL(url);throw Error('资料库已更新，请重试。');}assets.set(key,url);return url;}
  function asset(id,name){const key=id+'/'+name;if(assets.has(key))return assets.get(key);const placeholder='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>')+'#kumo-'+encodeURIComponent(key);if(!loading.has(key)){loading.set(key,assetBlob(id,name).then(blob=>{const url=URL.createObjectURL(blob);assets.set(key,url);for(const node of document.querySelectorAll('[src="'+CSS.escape(placeholder)+'"],[href="'+CSS.escape(placeholder)+'"],[poster="'+CSS.escape(placeholder)+'"],[style*="'+CSS.escape(placeholder)+'"]'))for(const attr of ['src','href','style','poster']){const value=node.getAttribute(attr);if(value?.includes(placeholder))node.setAttribute(attr,value.replaceAll(placeholder,url));}scope.dispatchEvent(new CustomEvent('kumo:asset-ready'));return url;}).catch(()=>null).finally(()=>loading.delete(key)));}return placeholder;}
  const boundImages=new WeakMap();let imageObserver=null;
@@ -74,6 +216,6 @@
  function descendants(nodes,id,parent){const result=new Set([id]);for(let n=0;n<nodes.length;n++)for(const v of nodes)if(result.has(v[parent]))result.add(v.id);return result;}
  async function knowledge(){const s=await snapshot(),fresh=new Set(s.rows.filter(r=>r.fresh).map(r=>r.id)),cards=array(s.wiki.cards),domains=array(s.wiki.domains),topics=array(s.wiki.topics),nodes=[...domains.map(n=>({...n,kind:'domain'})),...topics.map(n=>({...n,kind:'topic'}))].map(n=>{const ids=descendants(n.kind==='domain'?domains:topics,n.id,n.kind==='domain'?'parentDomainId':'parentTopicId'),relevant=cards.filter(c=>array(n.kind==='domain'?c.domainIds:c.topicIds).some(id=>ids.has(id)));return {...n,sourceCount:relevant.filter(c=>fresh.has(c.id)).length,summaryNeedsReview:relevant.some(c=>!fresh.has(c.id))};});return {cachedOnly:s.cachedOnly,savedAt:s.savedAt,revision:s.wiki.revision||0,total:s.rows.length,compiled:fresh.size,indexOnly:cards.filter(c=>fresh.has(c.id)&&c.evidenceStatus==='index_only').length,nodes,cards:cards.map(c=>({...c,stale:!fresh.has(c.id)})),sources:s.rows.map(r=>({...r.item,collections:r.item.userTags,compiled:r.fresh})),relations:array(s.wiki.relations).filter(r=>fresh.has(r.from)&&fresh.has(r.to)),warnings:s.warnings};}
  // Compatibility name only: every operation above reads/writes authorized files; no HTTP.
- scope.KumoBridge={transport:'filesystem',status,connect,library,tags,item,lookup,updateTag,annotate,setCollection,asset,assetURL,assetBlob,bindAsset,knowledge,invalidateCache};
+ scope.KumoBridge={transport:'filesystem',status,connect,library,tags,item,lookup,updateTag,annotate,setCollection,asset,assetURL,assetBlob,bindAsset,knowledge,invalidateCache,orderTags,repairMedia};
  scope.KumoDirectory={...scope.KumoBridge,snapshot};
 })(globalThis);
