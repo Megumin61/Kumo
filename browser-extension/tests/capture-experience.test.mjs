@@ -5,45 +5,57 @@ import {readFile} from 'node:fs/promises';
 
 class Element {
   children=[]; dataset={}; attributes={}; style={}; classList={add(){},remove(){},toggle(){}};
-  append(...nodes){this.children.push(...nodes);}
-  replaceChildren(...nodes){this.children=[...nodes];}
+  detach(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(node=>node!==this);this.parentElement=null;}
+  append(...nodes){for(const node of nodes){node.detach();node.parentElement=this;this.children.push(node);}}
+  replaceChildren(...nodes){for(const child of [...this.children])child.detach();this.append(...nodes);}
+  after(node){node.detach();node.parentElement=this.parentElement;this.parentElement.children.splice(this.parentElement.children.indexOf(this)+1,0,node);}
   setAttribute(name,value){this.attributes[name]=String(value);}
   addEventListener(name,fn){this[name]=fn;}
   querySelectorAll(){return this.children.flatMap(w=>w.children?.filter(c=>c.className==='chip')||[]);}
 }
-async function fixture({tags,items,recent}={}) {
-  const store=new Map(recent?[['kumo-last-saved-tag',recent]]:[]);
-  const list=new Element(),label=new Element(),row=new Element(); let more;
-  const doc={getElementById(id){return id==='tag-list'?list:more;},querySelector(query){return query==='.label-row'?row:label;},createElement(){const el=new Element();Object.defineProperty(el,'id',{set(v){if(v==='all-tags')more=el;}});return el;},dispatchEvent(){}};
+async function fixture({tags,choice}={}) {
+  const store=new Map(choice?[['kumo-last-selected-tag',choice]]:[]);
+  const list=new Element(),children=new Element(),label=new Element(),row=new Element(),tree=new Element(); let more;
+  tree.append(list,children);
+  const doc={getElementById(id){return id==='tag-list'?list:id==='child-tag-list'?children:more;},querySelector(query){return query==='.label-row'?row:label;},createElement(){const el=new Element();Object.defineProperty(el,'id',{set(v){if(v==='all-tags')more=el;}});return el;},dispatchEvent(){}};
   const localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v)};
-  const bridge={tags:async()=>({tags,unclassifiedCount:1}),library:async()=>({items,total:items.length})};
-  const ctx={document:doc,localStorage,KumoBridge:bridge,KumoUI:{ensureCollections:async()=>{}},ResizeObserver:class{observe(){}},requestAnimationFrame(){},Event:class{},CustomEvent:class{},console};
-  vm.runInNewContext(await readFile(new URL('../tags.js',import.meta.url),'utf8'),ctx);
-  return {api:ctx.KumoTags,list,store,label};
+
+  const ctx={document:doc,localStorage,KumoUI:{ensureCollections:async()=>{}},ResizeObserver:class{observe(){}},requestAnimationFrame(){},Event:class{},CustomEvent:class{},console};
+  vm.createContext(ctx);
+  vm.runInContext(await readFile(new URL('../bridge.js',import.meta.url),'utf8'),ctx);
+  ctx.KumoBridge.tags=async()=>({tags,unclassifiedCount:1});
+  vm.runInContext(await readFile(new URL('../tags.js',import.meta.url),'utf8'),ctx);
+  return {api:ctx.KumoTags,list,children,store,label};
 }
-test('most recent saved tag goes first, then usage count, and it is selected by default',async()=>{
-  const tags=[{id:'a',label:'A',count:10},{id:'b',label:'B',count:2},{id:'c',label:'C',count:5}];
-  const f=await fixture({tags,items:[],recent:'b'});await f.api.load(true);
-  assert.deepEqual(Array.from(f.list.children.slice(0,3),w=>w.children[0].dataset.tagId),['b','a','c']);
-  assert.equal(f.list.children[0].children[0].attributes['aria-pressed'],'true');
+test('sorts every tag by latest capture and keeps the current choice on refresh',async()=>{
+  const tags=[{id:'a',label:'A',count:10,latestCapturedAt:'2026-01-01'},{id:'b',label:'B',count:2,latestCapturedAt:'2026-02-01'},{id:'c',label:'C',count:5,latestCapturedAt:'2026-01-15'}];
+  const f=await fixture({tags});await f.api.load(true);
+  const ordered=()=>Array.from(f.list.children.slice(0,3),w=>w.children[0].dataset.tagId);
+  assert.deepEqual(ordered(),['b','c','a']);
   assert.equal(f.api.selected()[0].id,'b');
-  f.api.recordSaved([{id:'c'}]);await f.api.load(true);
-  assert.deepEqual(Array.from(f.list.children.slice(0,3),w=>w.children[0].dataset.tagId),['c','a','b']);
-  assert.equal(f.api.selected()[0].id,'b','refresh does not silently change the current choice');
+  tags[2].latestCapturedAt='2026-03-01';await f.api.load(true);
+  assert.deepEqual(ordered(),['c','b','a']);
+  assert.equal(f.api.selected()[0].id,'b');
 });
-test('on first use infer the newest tagged capture; fall back to count when no recent capture exists',async()=>{
-  const tags=[{id:'a',label:'A',count:10},{id:'b',label:'B',count:2}];
-  const f=await fixture({tags,items:[{capturedAt:'2026-01-01',userTags:[{id:'a'}]},{capturedAt:'2026-02-01',userTags:[{id:'b'}]}]});
-  await f.api.load(true);assert.equal(f.api.selected()[0].id,'b');assert.equal(f.store.get('kumo-last-saved-tag'),'b');
-  const g=await fixture({tags,items:[]});await g.api.load(true);assert.equal(g.api.selected()[0].id,'a');
+test('expands the parent before selecting a child tag',async()=>{
+  const tags=[{id:'p',label:'Parent'},{id:'c',label:'Child',parentId:'p'}];
+  const f=await fixture({tags});await f.api.load(true);
+  assert.equal(f.children.hidden,true);
+  f.list.children[0].children[0].onclick();
+  assert.equal(f.children.hidden,false);
+  assert.equal(f.list.children[1],f.children);
+  assert.equal(f.children.children.length,1);
+  f.children.children[0].children[0].onclick();
+  assert.equal(f.api.selected()[0].id,'c');
+  assert.equal(f.label.textContent,'标签 · Parent / Child');
 });
 test('deleted and hidden labels are never selected by default',async()=>{
-  const f=await fixture({tags:[{id:'old',label:'Old',count:99,hidden:true},{id:'ok',label:'OK',count:1}],items:[],recent:'old'});
+  const f=await fixture({tags:[{id:'old',label:'Old',count:99,hidden:true},{id:'ok',label:'OK',count:1}],choice:'old'});
   await f.api.load(true);assert.equal(f.api.selected()[0].id,'ok');
 });
 test('a later reconnect selects the first available label after an empty initial load',async()=>{
   const tags=[];
-  const f=await fixture({tags,items:[]});
+  const f=await fixture({tags});
   await f.api.load(true);assert.equal(f.api.selected().length,0);
   tags.push({id:'later',label:'Later',count:1});
   await f.api.load(true);assert.equal(f.api.selected()[0].id,'later');
